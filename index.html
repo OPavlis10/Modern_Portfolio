@@ -31,9 +31,21 @@
 
     --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in-out: cubic-bezier(0.7, 0, 0.3, 1);
+    --ease-expo:   cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-soft:   cubic-bezier(0.32, 0.72, 0, 1);
 
     --mx: 50%;
     --my: 50%;
+  }
+
+  /* Respect users who don't want motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   html { scroll-behavior: smooth; }
@@ -68,39 +80,41 @@
     z-index: 0;
     pointer-events: none;
   }
-  .bg-orbs {
+
+  /* Aurora — slow-drifting color clouds behind the particles.
+     Leans toward the cursor and lifts slightly with scroll. */
+  .bg-aurora {
     background:
-      radial-gradient(circle at 18% 22%, rgba(120, 80, 200, 0.16), transparent 35%),
-      radial-gradient(circle at 85% 78%, rgba(80, 200, 220, 0.10), transparent 40%),
-      radial-gradient(circle at 50% 50%, rgba(255, 180, 220, 0.04), transparent 60%);
+      radial-gradient(circle 760px at
+        calc(var(--mx) - 8vw)
+        calc(var(--my) - 6vh + var(--scroll-yp, 0px) * 0.35),
+        rgba(140, 100, 220, 0.26), transparent 60%),
+      radial-gradient(circle 660px at
+        calc(100% - var(--mx) + 6vw)
+        calc(100% - var(--my) + 4vh - var(--scroll-yp, 0px) * 0.25),
+        rgba(80, 200, 220, 0.14), transparent 60%),
+      radial-gradient(circle 520px at 50%
+        calc(50% + var(--scroll-yp, 0px) * -0.35),
+        rgba(255, 180, 220, 0.07), transparent 60%);
+    filter: blur(22px) saturate(125%);
   }
-  .bg-grid {
-    background-image: radial-gradient(rgba(255,255,255,0.13) 1.1px, transparent 1.1px);
-    background-size: 26px 26px;
-    -webkit-mask-image: radial-gradient(
-      circle 340px at var(--mx) var(--my),
-      rgba(0,0,0,1) 0%,
-      rgba(0,0,0,0.6) 30%,
-      rgba(0,0,0,0.18) 65%,
-      transparent 100%
-    );
-            mask-image: radial-gradient(
-      circle 340px at var(--mx) var(--my),
-      rgba(0,0,0,1) 0%,
-      rgba(0,0,0,0.6) 30%,
-      rgba(0,0,0,0.18) 65%,
-      transparent 100%
-    );
+
+  /* The particle constellation canvas — fades in once the first frame paints */
+  #bg-canvas {
+    opacity: 0;
+    transition: opacity 1.4s var(--ease-expo);
   }
+  #bg-canvas.ready { opacity: 1; }
+
+  /* Soft spotlight that follows the cursor. */
   .bg-spot {
     background: radial-gradient(
-      circle 500px at var(--mx) var(--my),
+      circle 480px at var(--mx) var(--my),
       rgba(200, 168, 255, 0.13),
-      rgba(120, 100, 200, 0.06) 35%,
+      rgba(120, 100, 200, 0.04) 35%,
       transparent 70%
     );
     mix-blend-mode: screen;
-    transition: background 0.05s linear;
   }
   .bg-noise {
     opacity: 0.05;
@@ -120,19 +134,22 @@
   }
   .ambient i {
     position: absolute;
-    width: 4px; height: 4px;
+    width: 3px; height: 3px;
     border-radius: 50%;
     background: var(--accent);
-    box-shadow: 0 0 10px var(--accent);
-    opacity: 0.35;
+    box-shadow: 0 0 14px var(--accent), 0 0 4px var(--accent);
+    opacity: 0;
     animation: float-up linear infinite;
+    will-change: transform, opacity;
   }
   @keyframes float-up {
-    from { transform: translateY(110vh) scale(0.6); opacity: 0; }
-    10%  { opacity: 0.4; }
-    90%  { opacity: 0.4; }
-    to   { transform: translateY(-10vh) scale(1); opacity: 0; }
+    0%   { transform: translateY(110vh) translateX(0) scale(0.4); opacity: 0; }
+    8%   { opacity: 0.7; }
+    50%  { transform: translateY(50vh) translateX(8px) scale(1); opacity: 0.7; }
+    92%  { opacity: 0.7; }
+    100% { transform: translateY(-10vh) translateX(-8px) scale(0.4); opacity: 0; }
   }
+
 
   /* ========================================================
      CUSTOM CURSOR
@@ -144,23 +161,27 @@
     pointer-events: none;
     z-index: 300;
     mix-blend-mode: difference;
-    will-change: transform;
+    will-change: transform, width, height;
   }
   .cursor-dot { width: 6px; height: 6px; background: #fff; }
   .cursor-ring {
     width: 30px; height: 30px;
     border: 1px solid rgba(255,255,255,0.7);
-    transition: width 0.22s var(--ease-out), height 0.22s var(--ease-out), background 0.22s;
+    transition: width 0.55s var(--ease-expo),
+                height 0.55s var(--ease-expo),
+                background 0.45s var(--ease-soft),
+                border-color 0.45s var(--ease-soft),
+                opacity 0.4s ease;
   }
   .cursor-ring.hov {
-    width: 56px; height: 56px;
+    width: 64px; height: 64px;
     background: rgba(255,255,255,0.08);
     border-color: rgba(255,255,255,0.95);
   }
   .cursor-ring.click {
-    width: 78px; height: 78px;
+    width: 86px; height: 86px;
     border-color: var(--accent);
-    background: rgba(200,180,255,0.12);
+    background: rgba(200,180,255,0.14);
   }
   @media (max-width: 900px), (pointer: coarse) {
     body { cursor: auto; }
@@ -220,11 +241,16 @@
     font-size: 0.88rem;
     letter-spacing: -0.005em;
     cursor: none;
-    transition: background 0.3s, border-color 0.3s, padding 0.3s;
+    transition: background 0.6s var(--ease-expo),
+                border-color 0.6s var(--ease-expo),
+                padding 0.5s var(--ease-expo),
+                box-shadow 0.6s var(--ease-expo);
+    will-change: transform;
   }
   .menu-btn:hover {
     background: rgba(28,28,40,0.85);
     border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(200,180,255,0.06), 0 8px 24px -10px rgba(200,180,255,0.4);
   }
   .menu-btn .label { transition: color 0.3s; }
   .menu-btn:hover .label { color: var(--accent); }
@@ -238,7 +264,9 @@
     left: 0; right: 0;
     height: 1.5px;
     background: currentColor;
-    transition: transform 0.4s var(--ease-out), top 0.4s var(--ease-out), opacity 0.3s;
+    transition: transform 0.7s var(--ease-expo),
+                top 0.7s var(--ease-expo),
+                opacity 0.4s ease;
   }
   .menu-btn .bars i:nth-child(1) { top: 4px;  }
   .menu-btn .bars i:nth-child(2) { top: 10px; }
@@ -271,6 +299,8 @@
 
   /* ========================================================
      FULLSCREEN MENU OVERLAY
+     Paint-from-the-corner reveal: a circle clipped to the top-right
+     expands across the screen, then the menu items fade in.
      ======================================================== */
   .menu-overlay {
     position: fixed;
@@ -279,31 +309,37 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.55s var(--ease-out), visibility 0s linear 0.55s;
+    transition: visibility 0s linear 0.7s;
   }
   body.menu-open .menu-overlay {
-    opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition: opacity 0.55s var(--ease-out), visibility 0s linear 0s;
+    transition: visibility 0s linear 0s;
   }
+  /* The paint layer — expanding circle from the menu button corner */
   .menu-overlay-bg {
     position: absolute;
     inset: 0;
-    background: rgba(10,10,16,0.88);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(200,180,255,0.18), transparent 55%),
+      radial-gradient(circle at 0% 100%, rgba(140,255,210,0.10), transparent 55%),
+      rgba(10,10,16,0.92);
     backdrop-filter: blur(26px) saturate(140%);
     -webkit-backdrop-filter: blur(26px) saturate(140%);
+    /* paint origin matches the menu button's center (top-right area) */
+    --paint-x: calc(100% - 50px);
+    --paint-y: 42px;
+    clip-path: circle(0% at var(--paint-x) var(--paint-y));
+    /* close: snappy retract after items fade */
+    transition: clip-path 0.5s cubic-bezier(0.77, 0, 0.175, 1) 0.18s;
+    will-change: clip-path;
   }
-  .menu-overlay-bg::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 20% 30%, rgba(200,180,255,0.10), transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(140,255,210,0.07), transparent 45%);
+  body.menu-open .menu-overlay-bg {
+    clip-path: circle(150% at var(--paint-x) var(--paint-y));
+    /* open: paint spreads immediately, no delay */
+    transition: clip-path 0.7s cubic-bezier(0.77, 0, 0.175, 1);
   }
   .menu-content {
     position: relative;
@@ -323,6 +359,15 @@
     display: inline-flex;
     align-items: center;
     gap: 12px;
+    opacity: 0;
+    transform: translateY(-6px);
+    /* default = closing: snap out fast */
+    transition: opacity 0.18s ease-out, transform 0.25s ease-out;
+  }
+  body.menu-open .menu-eyebrow {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.5s var(--ease-expo) 0.38s, transform 0.6s var(--ease-expo) 0.38s;
   }
   .menu-eyebrow::before {
     content: '';
@@ -337,16 +382,23 @@
   .menu-list li {
     border-bottom: 1px solid var(--line);
     opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.7s var(--ease-out), transform 0.8s var(--ease-out);
+    transform: translateY(28px);
+    /* default = closing: snap out fast so the paint can retract cleanly */
+    transition: opacity 0.18s ease-out, transform 0.25s ease-out;
+    will-change: transform, opacity;
   }
   .menu-list li:first-child { border-top: 1px solid var(--line); }
-  body.menu-open .menu-list li { opacity: 1; transform: translateY(0); }
-  body.menu-open .menu-list li:nth-child(1) { transition-delay: 0.20s; }
-  body.menu-open .menu-list li:nth-child(2) { transition-delay: 0.27s; }
-  body.menu-open .menu-list li:nth-child(3) { transition-delay: 0.34s; }
-  body.menu-open .menu-list li:nth-child(4) { transition-delay: 0.41s; }
-  body.menu-open .menu-list li:nth-child(5) { transition-delay: 0.48s; }
+  body.menu-open .menu-list li {
+    opacity: 1;
+    transform: translateY(0);
+    /* open: wait for the paint to sweep across, then ride in */
+    transition: opacity 0.7s var(--ease-expo), transform 0.85s var(--ease-expo);
+  }
+  body.menu-open .menu-list li:nth-child(1) { transition-delay: 0.42s; }
+  body.menu-open .menu-list li:nth-child(2) { transition-delay: 0.50s; }
+  body.menu-open .menu-list li:nth-child(3) { transition-delay: 0.58s; }
+  body.menu-open .menu-list li:nth-child(4) { transition-delay: 0.66s; }
+  body.menu-open .menu-list li:nth-child(5) { transition-delay: 0.74s; }
 
   .menu-list a {
     display: flex;
@@ -360,7 +412,9 @@
     color: var(--text-dim);
     line-height: 1;
     cursor: none;
-    transition: color 0.35s var(--ease-out), padding-left 0.5s var(--ease-out);
+    transition: color 0.7s var(--ease-expo),
+                padding-left 0.8s var(--ease-expo),
+                letter-spacing 0.8s var(--ease-expo);
     position: relative;
   }
   .menu-list a::after {
@@ -374,7 +428,8 @@
   }
   .menu-list a:hover {
     color: var(--accent);
-    padding-left: 24px;
+    padding-left: 36px;
+    letter-spacing: -0.035em;
   }
   .menu-list a:hover::after { opacity: 1; transform: translateX(0); }
   .menu-list a.active { color: var(--text); }
@@ -407,10 +462,15 @@
     flex-wrap: wrap;
     gap: 18px;
     opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s var(--ease-out) 0.55s, transform 0.6s var(--ease-out) 0.55s;
+    transform: translateY(12px);
+    /* default = closing: snap out fast */
+    transition: opacity 0.18s ease-out, transform 0.25s ease-out;
   }
-  body.menu-open .menu-foot { opacity: 1; transform: translateY(0); }
+  body.menu-open .menu-foot {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.6s var(--ease-expo) 0.82s, transform 0.6s var(--ease-expo) 0.82s;
+  }
   .menu-foot .links {
     display: flex; flex-wrap: wrap; gap: 18px;
     font-family: 'JetBrains Mono', monospace;
@@ -449,29 +509,26 @@
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transform: translateY(18px);
-    filter: blur(8px);
+    transform: translateY(36px) scale(0.985);
     transition:
-      opacity 0.6s var(--ease-out),
-      transform 0.7s var(--ease-out),
-      filter 0.6s var(--ease-out),
-      visibility 0s linear 0.7s;
+      opacity 0.85s var(--ease-expo),
+      transform 1.1s var(--ease-expo),
+      visibility 0s linear 1.1s;
+    will-change: transform, opacity;
   }
   .page.active {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateY(0);
-    filter: blur(0);
+    transform: translateY(0) scale(1);
     transition:
-      opacity 0.55s var(--ease-out) 0.05s,
-      transform 0.7s var(--ease-out) 0.05s,
-      filter 0.5s var(--ease-out) 0.05s,
+      opacity 0.95s var(--ease-expo) 0.08s,
+      transform 1.15s var(--ease-expo) 0.08s,
       visibility 0s linear 0s;
   }
   .page.leaving {
-    transform: translateY(-22px);
-    filter: blur(10px);
+    transform: translateY(-26px) scale(0.99);
+    opacity: 0;
   }
 
   .page::-webkit-scrollbar { width: 8px; }
@@ -512,36 +569,56 @@
   .accent { color: var(--accent); }
   .accent-2 { color: var(--accent-2); }
 
-  .line-mask { overflow: hidden; display: block; }
+  .line-mask {
+    overflow: hidden;
+    display: block;
+    perspective: 1200px;
+  }
   .line-mask > span {
     display: block;
-    transform: translateY(105%);
+    transform: translateY(110%) rotateX(-35deg);
+    transform-origin: 50% 0%;
     opacity: 0;
-    transition: transform 1s var(--ease-out), opacity 1s var(--ease-out);
+    transition: transform 1.4s var(--ease-expo), opacity 1.2s var(--ease-expo);
+    will-change: transform, opacity;
   }
   .page.active .line-mask > span {
-    transform: translateY(0);
+    transform: translateY(0) rotateX(0);
     opacity: 1;
   }
-  .page.active .line-mask:nth-child(1) > span { transition-delay: 0.10s; }
-  .page.active .line-mask:nth-child(2) > span { transition-delay: 0.18s; }
-  .page.active .line-mask:nth-child(3) > span { transition-delay: 0.26s; }
-  .page.active .line-mask:nth-child(4) > span { transition-delay: 0.34s; }
+  .page.active .line-mask:nth-child(1) > span { transition-delay: 0.12s; }
+  .page.active .line-mask:nth-child(2) > span { transition-delay: 0.22s; }
+  .page.active .line-mask:nth-child(3) > span { transition-delay: 0.32s; }
+  .page.active .line-mask:nth-child(4) > span { transition-delay: 0.42s; }
+
+  /* Per-letter split — used on first-load hero reveal */
+  .split-char {
+    display: inline-block;
+    transform: translateY(110%) rotate(8deg);
+    opacity: 0;
+    transition: transform 1.1s var(--ease-expo), opacity 0.9s var(--ease-expo);
+    will-change: transform, opacity;
+  }
+  .split-char.in {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
 
   .stagger > * {
     opacity: 0;
-    transform: translateY(16px);
-    transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+    transform: translateY(22px);
+    transition: opacity 0.95s var(--ease-expo), transform 1s var(--ease-expo);
+    will-change: transform, opacity;
   }
   .page.active .stagger > * { opacity: 1; transform: translateY(0); }
-  .page.active .stagger > *:nth-child(1) { transition-delay: 0.30s; }
-  .page.active .stagger > *:nth-child(2) { transition-delay: 0.38s; }
-  .page.active .stagger > *:nth-child(3) { transition-delay: 0.46s; }
-  .page.active .stagger > *:nth-child(4) { transition-delay: 0.54s; }
-  .page.active .stagger > *:nth-child(5) { transition-delay: 0.62s; }
-  .page.active .stagger > *:nth-child(6) { transition-delay: 0.70s; }
-  .page.active .stagger > *:nth-child(7) { transition-delay: 0.78s; }
-  .page.active .stagger > *:nth-child(8) { transition-delay: 0.86s; }
+  .page.active .stagger > *:nth-child(1) { transition-delay: 0.35s; }
+  .page.active .stagger > *:nth-child(2) { transition-delay: 0.45s; }
+  .page.active .stagger > *:nth-child(3) { transition-delay: 0.55s; }
+  .page.active .stagger > *:nth-child(4) { transition-delay: 0.65s; }
+  .page.active .stagger > *:nth-child(5) { transition-delay: 0.75s; }
+  .page.active .stagger > *:nth-child(6) { transition-delay: 0.85s; }
+  .page.active .stagger > *:nth-child(7) { transition-delay: 0.95s; }
+  .page.active .stagger > *:nth-child(8) { transition-delay: 1.05s; }
 
   /* ========================================================
      MARQUEE — single font, single solid color, consistent
@@ -705,25 +782,48 @@
     gap: 30px;
     padding: 26px 0;
     border-top: 1px solid var(--line);
-    transition: padding 0.5s var(--ease-out), background 0.5s var(--ease-out);
+    transition: padding 0.9s var(--ease-expo), background 0.6s var(--ease-soft);
     position: relative;
     cursor: none;
     text-decoration: none;
     color: inherit;
+    overflow: hidden;
   }
   .prow:last-child { border-bottom: 1px solid var(--line); }
-  .prow:hover { padding-left: 22px; padding-right: 22px; }
+  .prow:hover { padding-left: 26px; padding-right: 26px; }
   .prow::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(200,180,255,0.06) 50%, transparent);
-    opacity: 0;
-    transition: opacity 0.5s var(--ease-out);
+    background: linear-gradient(100deg,
+      transparent 0%,
+      transparent 30%,
+      rgba(200,180,255,0.12) 50%,
+      transparent 70%,
+      transparent 100%);
+    background-size: 220% 100%;
+    background-position: -100% 0;
+    background-repeat: no-repeat;
+    transition: background-position 1.3s var(--ease-expo);
     pointer-events: none;
   }
-  .prow:hover::before { opacity: 1; }
+  .prow:hover::before { background-position: 100% 0; }
   .prow:hover .name { color: var(--accent); }
+
+  /* animated underline that draws under name on hover */
+  .prow .name { position: relative; }
+  .prow .name::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    width: 100%;
+    max-width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    transition: max-width 1s var(--ease-expo);
+  }
+  .prow:hover .name::after { max-width: 100%; }
 
   .prow .idx {
     font-family: 'JetBrains Mono', monospace;
@@ -834,13 +934,36 @@
     margin-bottom: 60px;
   }
   .skill-cat {
+    position: relative;
     padding: 24px;
     border: 1px solid var(--line);
     border-radius: 16px;
     background: var(--surface);
-    transition: border-color 0.35s, background 0.35s;
+    transition: border-color 0.5s var(--ease-expo),
+                background 0.5s var(--ease-expo);
+    overflow: hidden;
   }
-  .skill-cat:hover { border-color: var(--accent); background: var(--surface-2); }
+  /* corner L-indicator — top-right */
+  .skill-cat::before {
+    content: '';
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 14px; height: 14px;
+    border-top: 1.5px solid var(--accent);
+    border-right: 1.5px solid var(--accent);
+    opacity: 0;
+    transform: translate(6px, -6px);
+    transition: opacity 0.5s var(--ease-expo), transform 0.6s var(--ease-expo);
+    pointer-events: none;
+  }
+  .skill-cat:hover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .skill-cat:hover::before {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
   .skill-cat .cat-head {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.7rem;
@@ -872,10 +995,19 @@
     font-size: 0.95rem;
     padding-left: 18px;
     position: relative;
-    transition: color 0.25s;
+    transition: color 0.4s var(--ease-soft), padding-left 0.5s var(--ease-expo);
   }
-  .skill-cat ul li::before { content: '→'; position: absolute; left: 0; color: var(--accent); opacity: 0.6; }
-  .skill-cat ul li:hover { color: var(--text); }
+  .skill-cat ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    opacity: 0.6;
+    transition: transform 0.5s var(--ease-expo), opacity 0.4s ease;
+  }
+  .skill-cat:hover ul li::before { opacity: 1; transform: translateX(2px); }
+  .skill-cat ul li:hover { color: var(--text); padding-left: 22px; }
+  .skill-cat ul li:hover::before { transform: translateX(4px); }
 
   .stack-grid {
     display: grid;
@@ -892,29 +1024,66 @@
     flex-direction: column;
     align-items: center;
     gap: 12px;
-    transition: all 0.4s var(--ease-out);
+    transition: border-color 0.6s var(--ease-expo),
+                background 0.6s var(--ease-expo);
     position: relative;
     overflow: hidden;
   }
+  /* soft top glow on hover */
   .stile::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 50% 0%, rgba(200,180,255,0.15), transparent 70%);
+    background: radial-gradient(circle at 50% -10%, rgba(200,180,255,0.18), transparent 65%);
     opacity: 0;
-    transition: opacity 0.4s var(--ease-out);
+    transition: opacity 0.6s var(--ease-expo);
+    pointer-events: none;
   }
-  .stile:hover { transform: translateY(-3px); border-color: var(--accent); background: var(--surface-2); }
+  /* accent line that draws across the bottom edge on hover */
+  .stile::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    transform: scaleX(0);
+    transform-origin: 50% 50%;
+    transition: transform 0.7s var(--ease-expo);
+    pointer-events: none;
+  }
+  .stile:hover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
   .stile:hover::before { opacity: 1; }
-  .stile svg, .stile .glyph { width: 32px; height: 32px; color: var(--text); position: relative; z-index: 1; }
+  .stile:hover::after { transform: scaleX(1); }
+
+  .stile svg, .stile .glyph {
+    width: 32px; height: 32px;
+    color: var(--text);
+    position: relative;
+    z-index: 1;
+    transition: transform 0.7s var(--ease-expo), color 0.5s var(--ease-soft);
+  }
+  /* icon lifts and tilts — no scale, no flash */
+  .stile:hover svg,
+  .stile:hover .glyph {
+    transform: translateY(-5px) rotate(-6deg);
+    color: var(--accent);
+  }
   .stile .lbl {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.7rem;
     letter-spacing: 0.06em;
     color: var(--text-dim);
-    position: relative; z-index: 1;
+    position: relative;
+    z-index: 1;
+    transition: color 0.5s var(--ease-soft), letter-spacing 0.6s var(--ease-expo);
   }
-  .stile:hover .lbl { color: var(--accent); }
+  .stile:hover .lbl {
+    color: var(--accent);
+    letter-spacing: 0.14em;
+  }
 
   .exploring {
     margin-top: 60px;
@@ -1058,10 +1227,11 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    transition: all 0.4s var(--ease-out);
+    transition: border-color 0.6s var(--ease-expo), background 0.6s var(--ease-expo);
     position: relative;
     overflow: hidden;
   }
+  /* check badge — pulses softly on hover */
   .cert::after {
     content: '✓';
     position: absolute;
@@ -1073,8 +1243,29 @@
     color: #0a0a10;
     font-size: 0.85rem;
     font-weight: 700;
+    transition: box-shadow 0.6s var(--ease-expo), transform 0.6s var(--ease-expo);
   }
-  .cert:hover { border-color: var(--accent); transform: translateY(-3px); }
+  /* accent line draws across the bottom on hover */
+  .cert::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    transform: scaleX(0);
+    transform-origin: 0% 50%;
+    transition: transform 0.8s var(--ease-expo);
+    pointer-events: none;
+  }
+  .cert:hover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .cert:hover::after {
+    box-shadow: 0 0 0 6px rgba(147,249,210,0.12), 0 0 14px rgba(147,249,210,0.5);
+    transform: scale(1.08);
+  }
+  .cert:hover::before { transform: scaleX(1); transform-origin: 0% 50%; }
   .cert .cat {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.66rem;
@@ -1220,14 +1411,30 @@
     border: 1px solid var(--line);
     border-radius: 20px;
     background:
-      radial-gradient(circle at 70% 20%, rgba(200,180,255,0.08), transparent 50%),
+      radial-gradient(circle at var(--shine-x, 70%) var(--shine-y, 20%), rgba(200,180,255,0.14), transparent 50%),
       var(--surface);
     display: flex;
     flex-direction: column;
     gap: 22px;
     overflow: hidden;
     position: relative;
+    transform-style: preserve-3d;
+    transform: perspective(900px) rotateX(0) rotateY(0);
+    transition: transform 0.8s var(--ease-expo), border-color 0.6s var(--ease-soft);
+    will-change: transform;
   }
+  .clock-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle 280px at var(--shine-x, 70%) var(--shine-y, 20%), rgba(255,255,255,0.06), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.8s var(--ease-soft);
+    border-radius: inherit;
+  }
+  .clock-card.tilting { border-color: rgba(200,180,255,0.35); }
+  .clock-card.tilting::after { opacity: 1; }
   .clock-card .now {
     font-family: 'Inter Tight', sans-serif;
     font-weight: 300;
@@ -1292,14 +1499,14 @@
     z-index: 999;
     display: grid;
     place-items: center;
-    transition: opacity 0.7s var(--ease-out), visibility 0.7s;
+    transition: opacity 0.9s var(--ease-expo), visibility 0.9s, filter 0.9s var(--ease-expo);
   }
-  #loader.gone { opacity: 0; visibility: hidden; }
+  #loader.gone { opacity: 0; visibility: hidden; filter: blur(8px); }
   .l-mark { text-align: center; color: var(--text); }
   .l-mark .big {
     font-family: 'Inter Tight', sans-serif;
     font-weight: 600;
-    font-size: 1.5rem;
+    font-size: 1.55rem;
     letter-spacing: -0.03em;
     display: inline-flex;
     align-items: center;
@@ -1321,6 +1528,27 @@
     color: var(--text-mute);
     text-transform: uppercase;
   }
+  .l-mark .bar {
+    width: 200px;
+    height: 1px;
+    margin: 20px auto 0;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    position: relative;
+  }
+  .l-mark .bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    animation: loadbar 1.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  }
+  @keyframes loadbar {
+    0%   { transform: scaleX(0); }
+    100% { transform: scaleX(1); }
+  }
 </style>
 </head>
 <body>
@@ -1330,25 +1558,24 @@
   <div class="l-mark">
     <div class="big">Ondřej Pavlis</div>
     <div class="sm">Initializing portfolio</div>
+    <div class="bar"></div>
   </div>
 </div>
 
-<!-- BACKGROUND LAYERS (cursor-reactive) -->
-<div class="bg-layer bg-orbs"></div>
-<div class="bg-layer bg-grid"></div>
+<!-- BACKGROUND — cursor + scroll-reactive layers -->
+<div class="bg-layer bg-aurora"></div>
+<canvas class="bg-layer" id="bg-canvas" aria-hidden="true"></canvas>
 <div class="bg-layer bg-spot"></div>
 <div class="bg-layer bg-noise"></div>
 <div class="bg-layer bg-vig"></div>
 
 <div class="ambient" aria-hidden="true">
-  <i style="left:6%;  animation-duration:22s; animation-delay:0s;"></i>
-  <i style="left:18%; animation-duration:28s; animation-delay:5s; background:var(--accent-2); box-shadow:0 0 10px var(--accent-2);"></i>
-  <i style="left:32%; animation-duration:25s; animation-delay:8s;"></i>
-  <i style="left:48%; animation-duration:30s; animation-delay:2s; background:var(--warm); box-shadow:0 0 10px var(--warm);"></i>
-  <i style="left:62%; animation-duration:24s; animation-delay:11s;"></i>
-  <i style="left:78%; animation-duration:27s; animation-delay:6s; background:var(--accent-2); box-shadow:0 0 10px var(--accent-2);"></i>
-  <i style="left:92%; animation-duration:31s; animation-delay:14s;"></i>
+  <i style="left:12%; animation-duration:38s; animation-delay:0s;"></i>
+  <i style="left:38%; animation-duration:46s; animation-delay:12s; background:var(--accent-2); box-shadow:0 0 14px var(--accent-2);"></i>
+  <i style="left:68%; animation-duration:42s; animation-delay:6s;"></i>
+  <i style="left:88%; animation-duration:50s; animation-delay:22s; background:var(--accent-2); box-shadow:0 0 14px var(--accent-2);"></i>
 </div>
+
 
 <!-- CUSTOM CURSOR -->
 <div class="cursor-ring"></div>
@@ -1886,10 +2113,19 @@
 
 <script>
   // ============================================================
+  // GLOBAL — reduced motion guard
+  // ============================================================
+  const PREFERS_REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
+
+  // ============================================================
   // LOADER
   // ============================================================
   window.addEventListener('load', () => {
-    setTimeout(() => document.getElementById('loader').classList.add('gone'), 700);
+    // a beat longer so the progress bar gets to finish — feels intentional
+    setTimeout(() => document.getElementById('loader').classList.add('gone'), 1500);
+    // kick off the per-letter hero reveal after the loader is on its way out
+    setTimeout(splitAndRevealHero, 1700);
   });
 
   // ============================================================
@@ -1900,38 +2136,212 @@
   const root = document.documentElement;
 
   let mx = window.innerWidth/2, my = window.innerHeight/2;
-  let tx = mx, ty = my;
-  let rx = mx, ry = my;
-  let bgx = mx, bgy = my;
+  let dx = mx, dy = my;     // smoothed dot
+  let rx = mx, ry = my;     // smoothed ring
+  let bgx = mx, bgy = my;   // smoothed background spot
+  let targetScrollY = 0;     // raw scroll target
+  let scrollY = 0;           // smoothed scroll
 
   document.addEventListener('mousemove', e => {
     mx = e.clientX; my = e.clientY;
-    tx = mx; ty = my;
-    if (dot) dot.style.transform = `translate(${mx - 3}px, ${my - 3}px)`;
   });
   document.addEventListener('mousedown', () => ring && ring.classList.add('click'));
   document.addEventListener('mouseup',   () => ring && ring.classList.remove('click'));
 
-  function tick() {
-    rx += (tx - rx) * 0.18;
-    ry += (ty - ry) * 0.18;
-    if (ring) ring.style.transform = `translate(${rx - 15}px, ${ry - 15}px)`;
+  // Each .page has its own internal scroll — track whichever one is active
+  document.querySelectorAll('.page').forEach(p => {
+    p.addEventListener('scroll', () => {
+      // clamp so the parallax doesn't drift forever on long pages
+      targetScrollY = Math.min(p.scrollTop, 600);
+    }, { passive: true });
+  });
 
-    bgx += (mx - bgx) * 0.07;
-    bgy += (my - bgy) * 0.07;
+  function tick() {
+    // dot — very snappy but still buttery (no hard snap)
+    dx += (mx - dx) * 0.42;
+    dy += (my - dy) * 0.42;
+    if (dot) dot.style.transform = `translate3d(${dx - 3}px, ${dy - 3}px, 0)`;
+
+    // ring — softer trail
+    rx += (mx - rx) * 0.14;
+    ry += (my - ry) * 0.14;
+    if (ring) ring.style.transform = `translate3d(${rx - 15}px, ${ry - 15}px, 0)`;
+
+    // background spot/aurora — much smoother trail
+    bgx += (mx - bgx) * 0.055;
+    bgy += (my - bgy) * 0.055;
     const px = (bgx / window.innerWidth) * 100;
     const py = (bgy / window.innerHeight) * 100;
     root.style.setProperty('--mx', px + '%');
     root.style.setProperty('--my', py + '%');
 
+    // scroll-driven parallax — lerped so it never feels jumpy
+    scrollY += (targetScrollY - scrollY) * 0.08;
+    root.style.setProperty('--scroll-yp', scrollY.toFixed(2) + 'px');
+
     requestAnimationFrame(tick);
   }
-  tick();
+  if (!PREFERS_REDUCED) tick();
+
+  // Reset parallax when switching pages so a fresh page starts at the top of the bg
+  function resetScrollTarget() { targetScrollY = 0; }
 
   document.querySelectorAll('a, button, .prow, .stile, .cert, .channel, .chip, .skill-cat').forEach(el => {
     el.addEventListener('mouseenter', () => ring && ring.classList.add('hov'));
     el.addEventListener('mouseleave', () => ring && ring.classList.remove('hov'));
   });
+
+  // ============================================================
+  // MAGNETIC CTAs — subtle lean toward the cursor (rare wow)
+  // ============================================================
+  function attachMagnet(el, strength = 0.22, range = 1.6) {
+    if (!el || PREFERS_REDUCED || IS_TOUCH) return;
+    let tx = 0, ty = 0;
+    let cx = 0, cy = 0;
+    let active = false;
+    let raf;
+
+    const onMove = (e) => {
+      const r = el.getBoundingClientRect();
+      const ex = (e.clientX - (r.left + r.width / 2));
+      const ey = (e.clientY - (r.top + r.height / 2));
+      // only pull when cursor is within `range` * box around the element
+      const ax = Math.max(r.width, 80) * range;
+      const ay = Math.max(r.height, 40) * range;
+      if (Math.abs(ex) < ax && Math.abs(ey) < ay) {
+        tx = ex * strength;
+        ty = ey * strength;
+        if (!active) { active = true; loop(); }
+      } else if (active) {
+        tx = 0; ty = 0;
+      }
+    };
+    const reset = () => { tx = 0; ty = 0; };
+
+    function loop() {
+      cx += (tx - cx) * 0.18;
+      cy += (ty - cy) * 0.18;
+      el.style.transform = `translate3d(${cx.toFixed(2)}px, ${cy.toFixed(2)}px, 0)`;
+      if (Math.abs(cx) < 0.05 && Math.abs(cy) < 0.05 && tx === 0 && ty === 0) {
+        active = false;
+        el.style.transform = '';
+        cancelAnimationFrame(raf);
+        return;
+      }
+      raf = requestAnimationFrame(loop);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', reset);
+  }
+
+  // Run after DOM ready
+  ['menuBtn'].forEach(id => attachMagnet(document.getElementById(id), 0.25, 1.3));
+  document.querySelectorAll('.big-email, .gh-cta, .logo-fixed').forEach(el => attachMagnet(el, 0.18, 1.3));
+
+  // ============================================================
+  // 3D TILT — clock card (rare wow)
+  // ============================================================
+  function attachTilt(el, max = 8) {
+    if (!el || PREFERS_REDUCED || IS_TOUCH) return;
+    let raf;
+    let targetRX = 0, targetRY = 0, curRX = 0, curRY = 0;
+    let targetSX = 50, targetSY = 50, curSX = 50, curSY = 50;
+    let active = false;
+
+    const onEnter = () => {
+      el.classList.add('tilting');
+      if (!active) { active = true; loop(); }
+    };
+    const onMove = (e) => {
+      const r = el.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      targetRY = (px - 0.5) * max;
+      targetRX = -(py - 0.5) * max;
+      targetSX = px * 100;
+      targetSY = py * 100;
+    };
+    const onLeave = () => {
+      targetRX = 0; targetRY = 0;
+      targetSX = 70; targetSY = 20;
+      el.classList.remove('tilting');
+    };
+    function loop() {
+      curRX += (targetRX - curRX) * 0.12;
+      curRY += (targetRY - curRY) * 0.12;
+      curSX += (targetSX - curSX) * 0.15;
+      curSY += (targetSY - curSY) * 0.15;
+      el.style.transform = `perspective(900px) rotateX(${curRX.toFixed(2)}deg) rotateY(${curRY.toFixed(2)}deg)`;
+      el.style.setProperty('--shine-x', curSX + '%');
+      el.style.setProperty('--shine-y', curSY + '%');
+      if (Math.abs(targetRX) < 0.01 && Math.abs(targetRY) < 0.01 && Math.abs(curRX) < 0.05 && Math.abs(curRY) < 0.05) {
+        el.style.transform = '';
+        active = false;
+        cancelAnimationFrame(raf);
+        return;
+      }
+      raf = requestAnimationFrame(loop);
+    }
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+  }
+  document.querySelectorAll('.clock-card').forEach(c => attachTilt(c, 7));
+
+  // ============================================================
+  // HERO — per-letter reveal on first home visit (rare wow)
+  // ============================================================
+  let heroSplitDone = false;
+  function splitAndRevealHero() {
+    if (heroSplitDone || PREFERS_REDUCED) return;
+    const home = document.querySelector('.page[data-page="home"]');
+    if (!home) return;
+    const lines = home.querySelectorAll('h1.display .line-mask > span');
+    lines.forEach((line, lineIdx) => {
+      // walk child nodes — preserve nested <span class="accent">.</span>
+      const frag = document.createDocumentFragment();
+      [...line.childNodes].forEach(node => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          [...node.textContent].forEach(ch => {
+            const s = document.createElement('span');
+            s.className = 'split-char';
+            s.textContent = ch === ' ' ? ' ' : ch;
+            frag.appendChild(s);
+          });
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          // wrap each char inside the nested element too
+          const inner = node.textContent;
+          const wrap = node.cloneNode(false);
+          [...inner].forEach(ch => {
+            const s = document.createElement('span');
+            s.className = 'split-char';
+            s.textContent = ch === ' ' ? ' ' : ch;
+            wrap.appendChild(s);
+          });
+          frag.appendChild(wrap);
+        }
+      });
+      // The .line-mask outer wrapper still drives the initial slide-up.
+      // Once that has played, swap in the per-letter version on top of it
+      // so we get a second, finer-grained reveal.
+      line.innerHTML = '';
+      line.appendChild(frag);
+    });
+    // remove the line-mask y-translation immediately since chars handle reveal
+    home.querySelectorAll('h1.display .line-mask > span').forEach(s => {
+      s.style.transform = 'translateY(0)';
+      s.style.opacity = '1';
+    });
+    // stagger char reveal
+    const allChars = home.querySelectorAll('h1.display .split-char');
+    allChars.forEach((c, i) => {
+      c.style.transitionDelay = (i * 0.035) + 's';
+      // next frame so the transition fires
+      requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add('in')));
+    });
+    heroSplitDone = true;
+  }
 
   // ============================================================
   // MENU OVERLAY
@@ -1970,15 +2380,17 @@
       current.classList.add('leaving');
       setTimeout(() => {
         current.classList.remove('active', 'leaving');
-      }, 50);
+      }, 220);
     }
 
     const next = document.querySelector(`.page[data-page="${target}"]`);
     if (next) {
+      // wait for old page to clear out of the way so reveal feels intentional
       setTimeout(() => {
         next.classList.add('active');
         next.scrollTop = 0;
-      }, 80);
+        resetScrollTarget();
+      }, 260);
     }
 
     menuLinks.forEach(a => {
@@ -2059,6 +2471,255 @@
   }
   updateClocks();
   setInterval(updateClocks, 1000);
+
+  // ============================================================
+  // BACKGROUND — CANVAS PARTICLE CONSTELLATION
+  // Mouse repels nearby particles. Click sends out a ripple wave.
+  // Lines connect close particles and shift color near the cursor.
+  // ============================================================
+  (function bgCanvas() {
+    if (PREFERS_REDUCED) return;
+    const canvas = document.getElementById('bg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { alpha: true });
+
+    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0;
+    let particles = [];
+    let ripples = [];
+    let running = true;
+
+    // tuneables — bumped on big screens, leaner on tiny ones
+    function targetCount() {
+      const area = W * H;
+      // ~1 particle per 14k px², capped
+      return Math.min(IS_TOUCH ? 60 : 120, Math.max(36, Math.floor(area / 14000)));
+    }
+    const LINK_DIST = 138;
+    const LINK_DIST_SQ = LINK_DIST * LINK_DIST;
+    const REPEL_DIST = 230;
+    const HOVER_DIST = 280;
+
+    function size() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = Math.floor(W * DPR);
+      canvas.height = Math.floor(H * DPR);
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+
+    function spawn() {
+      const n = targetCount();
+      particles = [];
+      for (let i = 0; i < n; i++) {
+        const depth = 0.35 + Math.random() * 0.65; // 0.35–1.0
+        particles.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.2,
+          depth,
+          r: 0.55 + depth * 1.7,
+          baseAlpha: 0.18 + depth * 0.42,
+          seed: Math.random() * 1000
+        });
+      }
+    }
+
+    size(); spawn();
+
+    let resizeRaf;
+    window.addEventListener('resize', () => {
+      cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(() => { size(); spawn(); });
+    });
+
+    // click anywhere → ripple wave
+    document.addEventListener('mousedown', (e) => {
+      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, alpha: 1 });
+      if (ripples.length > 6) ripples.shift();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      running = !document.hidden;
+      if (running) { lastT = performance.now(); requestAnimationFrame(loop); }
+    });
+
+    let lastT = performance.now();
+    function loop(t) {
+      if (!running) return;
+      // dt normalized to 60fps so motion is frame-rate-independent
+      const dt = Math.min(50, t - lastT) / 16.67;
+      lastT = t;
+
+      ctx.clearRect(0, 0, W, H);
+
+      // mx/my live in outer scope (the main cursor tick uses them too)
+      const mxN = mx, myN = my;
+
+      // update ripples (click-driven shockwaves)
+      for (const r of ripples) {
+        r.radius += 10 * dt;
+        r.alpha  *= Math.pow(0.95, dt);
+      }
+      ripples = ripples.filter(r => r.alpha > 0.04 && r.radius < Math.max(W, H) * 1.4);
+
+      // update particles
+      for (const p of particles) {
+        // slow ambient flow field (curl-like swirl)
+        const fx = Math.cos(p.x * 0.0035 + p.y * 0.005 + t * 0.00022 + p.seed);
+        const fy = Math.sin(p.y * 0.0035 - p.x * 0.005 + t * 0.00022 + p.seed * 0.7);
+        p.vx += fx * 0.0014;
+        p.vy += fy * 0.0014;
+
+        // cursor repulsion
+        const dx = p.x - mxN;
+        const dy = p.y - myN;
+        const dsq = dx * dx + dy * dy;
+        if (dsq < REPEL_DIST * REPEL_DIST && dsq > 0.5) {
+          const d = Math.sqrt(dsq);
+          const f = (1 - d / REPEL_DIST) * 0.85 * p.depth;
+          p.vx += (dx / d) * f;
+          p.vy += (dy / d) * f;
+        }
+
+        // ripple shockwave forces
+        for (const r of ripples) {
+          const rdx = p.x - r.x;
+          const rdy = p.y - r.y;
+          const rd = Math.sqrt(rdx * rdx + rdy * rdy);
+          const ringDiff = Math.abs(rd - r.radius);
+          if (ringDiff < 45 && rd > 0.5) {
+            const rf = (1 - ringDiff / 45) * r.alpha * 2.4 * p.depth;
+            p.vx += (rdx / rd) * rf;
+            p.vy += (rdy / rd) * rf;
+          }
+        }
+
+        // damp
+        p.vx *= 0.93;
+        p.vy *= 0.93;
+
+        // integrate
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+
+        // wrap
+        if (p.x < -12) p.x = W + 12;
+        if (p.x > W + 12) p.x = -12;
+        if (p.y < -12) p.y = H + 12;
+        if (p.y > H + 12) p.y = -12;
+      }
+
+      // ---- LINES ----
+      ctx.lineWidth = 0.75;
+      for (let i = 0; i < particles.length; i++) {
+        const a = particles[i];
+        for (let j = i + 1; j < particles.length; j++) {
+          const b = particles[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const dsq = dx * dx + dy * dy;
+          if (dsq < LINK_DIST_SQ) {
+            const d = Math.sqrt(dsq);
+            const baseA = (1 - d / LINK_DIST) * 0.16;
+            // distance from line midpoint to cursor → cleaner "near mouse" check
+            const midx = (a.x + b.x) * 0.5;
+            const midy = (a.y + b.y) * 0.5;
+            const mdx = midx - mxN;
+            const mdy = midy - myN;
+            const md = Math.sqrt(mdx * mdx + mdy * mdy);
+            const boost = Math.max(0, 1 - md / HOVER_DIST);
+            const finalA = baseA + boost * 0.65 * (1 - d / LINK_DIST);
+
+            // color shift: passive white → violet → mint near cursor
+            let strokeR, strokeG, strokeB;
+            if (boost > 0.5) {
+              strokeR = 147; strokeG = 249; strokeB = 210;   // mint
+            } else if (boost > 0.18) {
+              strokeR = 200; strokeG = 180; strokeB = 255;   // violet
+            } else {
+              strokeR = 255; strokeG = 255; strokeB = 255;   // soft white
+            }
+            ctx.strokeStyle = `rgba(${strokeR},${strokeG},${strokeB},${finalA})`;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // ---- PARTICLES ----
+      for (const p of particles) {
+        const dx = p.x - mxN;
+        const dy = p.y - myN;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const prox = Math.max(0, 1 - d / HOVER_DIST);
+        const alpha = Math.min(1, p.baseAlpha + prox * 0.65);
+        const radius = p.r + prox * 1.5;
+
+        // glow halo for particles near cursor — drawn as a soft second layer
+        if (prox > 0.18) {
+          const haloR = radius * (2.2 + prox * 1.5);
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, haloR);
+          if (prox > 0.55) {
+            g.addColorStop(0, `rgba(147, 249, 210, ${0.32 * prox})`);
+            g.addColorStop(1, 'rgba(147, 249, 210, 0)');
+          } else {
+            g.addColorStop(0, `rgba(200, 180, 255, ${0.32 * prox})`);
+            g.addColorStop(1, 'rgba(200, 180, 255, 0)');
+          }
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, haloR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // core dot
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        if (prox > 0.55) {
+          ctx.fillStyle = `rgba(200, 240, 230, ${alpha})`;
+        } else if (prox > 0.18) {
+          ctx.fillStyle = `rgba(220, 205, 255, ${alpha})`;
+        } else {
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        }
+        ctx.fill();
+      }
+
+      // ---- RIPPLE RINGS ----
+      for (const r of ripples) {
+        // outer fade
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(147, 249, 210, ${r.alpha * 0.40})`;
+        ctx.lineWidth = 1.1;
+        ctx.stroke();
+
+        // a softer inner echo
+        if (r.radius > 24) {
+          ctx.beginPath();
+          ctx.arc(r.x, r.y, r.radius - 18, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(200, 180, 255, ${r.alpha * 0.18})`;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+      }
+
+      requestAnimationFrame(loop);
+    }
+
+    // fade canvas in once the first frame has rendered
+    requestAnimationFrame((t) => {
+      lastT = t;
+      requestAnimationFrame(loop);
+      canvas.classList.add('ready');
+    });
+  })();
 
   // ============================================================
   // CONSOLE EGG
