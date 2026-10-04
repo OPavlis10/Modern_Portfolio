@@ -1,26 +1,27 @@
 # Ondřej Pavlis — Portfolio
 
 Personal portfolio site for **Ondřej Pavlis** (`@opavlis10`).
-Student · Developer · Cybersecurity Enthusiast.
+Student at SSPŠ Prague · Developer · Cybersecurity Enthusiast.
 
-→ Live: _coming soon_
+→ Live: [ondrej.pavlis.net](https://ondrej.pavlis.net)
 
 ## About
 
-Clean, modern, single-page-app style portfolio with:
+Single-file, single-page-app style portfolio — five pages (Home, Work, Skills, About, Contact) behind a full-screen menu that paints in from the corner.
 
-- Cursor-reactive ambient background (dot grid + lerped glow)
-- Custom cursor with hover & click states
-- Full-screen menu overlay
-- Five separate pages — Home, Work, Skills, About, Contact — with smooth blur/fade transitions
-- Scrolling marquees with project keywords and a David Goggins quote
-- Live local-time clock (Prague / CZ)
+- **WebGL backgrounds per page** — LineWaves on Home, ColorBends on Work, Beams on Skills / About / Contact. Each one only renders while its page is showing.
+- **Interactive hero wordmark** — hover a letter to see its dashed vector outline and selection frame; drag letters off the baseline and they spring back.
+- **Fold-in headings** — section titles unfold panel by panel when a page opens or scrolls into view.
+- **Tilt cards** on the Skills page — spring-driven 3D tilt with a cursor-following inversion circle.
+- 14 projects on the Work page, a school path on About, live Prague clock on Contact.
+- Custom cursor, magnetic buttons, scrolling marquees, `prefers-reduced-motion` respected throughout.
 
-Built with vanilla HTML, CSS, and JavaScript. No frameworks. No build step.
+Vanilla HTML, CSS and JavaScript — no framework, no build step. Libraries load from jsDelivr:
+[ogl](https://github.com/oframe/ogl), [three.js](https://threejs.org) and [GSAP](https://gsap.com).
 
 ## Run locally
 
-Just open `index.html` in any modern browser.
+Just open `index.html` in a modern browser.
 
 ```bash
 open index.html
@@ -28,11 +29,13 @@ open index.html
 
 ## Deploy
 
-This is a single static file — `index.html`. Drop it on any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages) and it works.
+GitHub Pages serves `index.html` from `main`. The `CNAME` file points the custom domain `ondrej.pavlis.net` at it — keep it in the repo.
 
 ## Credits
 
-Quote: _"Be uncommon amongst uncommon people."_ — David Goggins
+- Background and text effects ported to vanilla JS from [React Bits](https://reactbits.dev) — LineWaves, ColorBends, Beams, FoldText, TechText.
+- Skill cards based on [unlumen-ui](https://ui.unlumen.com) TiltCard (Tilt + ClippedCircle).
+- Quote: _"Be uncommon amongst uncommon people."_ — David Goggins
 
 ---
 

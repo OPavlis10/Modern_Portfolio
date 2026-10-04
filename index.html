@@ -17,10 +17,11 @@
   :root {
     --bg:        #0a0a10;
     --bg-2:      #11111a;
-    --surface:   rgba(255,255,255,0.04);
-    --surface-2: rgba(255,255,255,0.07);
-    --line:      rgba(255,255,255,0.09);
-    --line-soft: rgba(255,255,255,0.06);
+    /* darker, violet-tinted glass surfaces — readable over WebGL backgrounds */
+    --surface:   rgba(20, 15, 36, 0.74);
+    --surface-2: rgba(30, 22, 54, 0.86);
+    --line:      rgba(168, 85, 247, 0.22);
+    --line-soft: rgba(168, 85, 247, 0.13);
     --text:      #ededf2;
     --text-dim:  #8a8a96;
     --text-mute: #5a5a64;
@@ -81,41 +82,32 @@
     pointer-events: none;
   }
 
-  /* Aurora — slow-drifting color clouds behind the particles.
-     Leans toward the cursor and lifts slightly with scroll. */
-  .bg-aurora {
-    background:
-      radial-gradient(circle 760px at
-        calc(var(--mx) - 8vw)
-        calc(var(--my) - 6vh + var(--scroll-yp, 0px) * 0.35),
-        rgba(140, 100, 220, 0.26), transparent 60%),
-      radial-gradient(circle 660px at
-        calc(100% - var(--mx) + 6vw)
-        calc(100% - var(--my) + 4vh - var(--scroll-yp, 0px) * 0.25),
-        rgba(80, 200, 220, 0.14), transparent 60%),
-      radial-gradient(circle 520px at 50%
-        calc(50% + var(--scroll-yp, 0px) * -0.35),
-        rgba(255, 180, 220, 0.07), transparent 60%);
-    filter: blur(22px) saturate(125%);
-  }
-
-  /* The particle constellation canvas — fades in once the first frame paints */
-  #bg-canvas {
+  /* Per-page WebGL layers (React Bits ports). Only the one matching
+     body[data-page] is visible; the JS pauses the others. */
+  .bg-gl {
     opacity: 0;
-    transition: opacity 1.4s var(--ease-expo);
+    transition: opacity 1s var(--ease-expo);
   }
-  #bg-canvas.ready { opacity: 1; }
+  .bg-gl canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  body[data-page="home"]    #bg-home.ready { opacity: 1; }   /* LineWaves  */
+  body[data-page="work"]    #bg-work.ready { opacity: 1; }   /* ColorBends */
+  body[data-page="skills"]  #bg-rest.ready,
+  body[data-page="about"]   #bg-rest.ready,
+  body[data-page="contact"] #bg-rest.ready { opacity: 1; }   /* Beams      */
 
-  /* Soft spotlight that follows the cursor. */
-  .bg-spot {
-    background: radial-gradient(
-      circle 480px at var(--mx) var(--my),
-      rgba(200, 168, 255, 0.13),
-      rgba(120, 100, 200, 0.04) 35%,
-      transparent 70%
-    );
-    mix-blend-mode: screen;
+  /* Dark scrim over the GL layers — keeps text readable. Tuned per page. */
+  .bg-scrim {
+    background: rgba(10, 10, 16, 0.40);
+    transition: background 0.9s ease;
   }
+  body[data-page="work"] .bg-scrim { background: rgba(10, 10, 16, 0.52); }
+  body[data-page="skills"]  .bg-scrim,
+  body[data-page="about"]   .bg-scrim,
+  body[data-page="contact"] .bg-scrim { background: rgba(10, 10, 16, 0.26); }
   .bg-noise {
     opacity: 0.05;
     mix-blend-mode: overlay;
@@ -621,6 +613,223 @@
   .page.active .stagger > *:nth-child(8) { transition-delay: 1.05s; }
 
   /* ========================================================
+     FOLDTEXT — React Bits <FoldText /> port (GSAP)
+     Headings tagged with [data-fold] are split into 3D panels
+     that unfold from the top edge. Typography is inherited, so
+     the look of each heading is unchanged.
+     ======================================================== */
+  .fold-text-sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .fold-text-visual { display: inline; }
+  .fold-text-word {               /* keeps words intact — wraps only at spaces */
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .fold-text-segment {
+    display: inline-block;
+    line-height: inherit;
+    perspective: var(--fold-perspective, 700px);
+    transform-style: preserve-3d;
+    vertical-align: baseline;
+  }
+  .fold-text-piece {
+    position: relative;
+    display: inline-block;
+    color: inherit;
+    line-height: inherit;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+  .fold-text-piece::after {
+    content: '';
+    position: absolute;
+    inset: -0.08em -0.02em;
+    pointer-events: none;
+    opacity: var(--fold-crease, 0);
+    mix-blend-mode: multiply;
+    border-radius: 0.08em;
+  }
+  .fold-text-piece[data-fold-hinge='top']::after {
+    background: linear-gradient(180deg, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.22) 42%, rgba(255,255,255,0.26) 100%);
+  }
+  .fold-text-piece[data-fold-hinge='bottom']::after {
+    background: linear-gradient(0deg, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.22) 42%, rgba(255,255,255,0.26) 100%);
+  }
+  .fold-text-piece[data-fold-hinge='left']::after {
+    background: linear-gradient(90deg, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.22) 42%, rgba(255,255,255,0.26) 100%);
+  }
+  .fold-text-piece[data-fold-hinge='right']::after {
+    background: linear-gradient(270deg, rgba(0,0,0,0.58) 0%, rgba(0,0,0,0.22) 42%, rgba(255,255,255,0.26) 100%);
+  }
+  /* headings that are armed but not yet unfolded stay invisible (no flash) */
+  [data-fold][data-fold-state='armed'] .fold-text-piece { opacity: 0; }
+
+  /* ========================================================
+     TECHTEXT — React Bits <TechText /> port (home hero)
+     The real <h1> text keeps defining the layout; a canvas sized
+     to the h1 (+ padding for frames/labels) draws the wordmark on
+     top at the exact same glyph positions.
+     ======================================================== */
+  h1.tech-text {
+    position: relative;
+    touch-action: pan-y;
+  }
+  h1.tech-text .tech-text-canvas {
+    position: absolute;
+    left: -64px;
+    top: -64px;
+    width: calc(100% + 128px);
+    height: calc(100% + 128px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.9s var(--ease-expo);
+  }
+  h1.tech-text .tt-src,
+  h1.tech-text .tt-src * { transition: color 0.9s var(--ease-expo); }
+  h1.tech-text.tt-on {
+    text-shadow: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  h1.tech-text.tt-on .tt-src,
+  h1.tech-text.tt-on .tt-src * { color: transparent !important; }
+  h1.tech-text.tt-on .tech-text-canvas { opacity: 1; }
+
+  /* ========================================================
+     TILTCARD — unlumen-ui <TiltCard /> port (skill cards)
+     Tilt: spring-driven 3D rotation toward the cursor.
+     ClippedCircle: an 800px circle with mix-blend-mode:difference
+     scales in from where the cursor entered → inverts the card.
+     ======================================================== */
+  .tilt-wrap { display: flex; }
+  .tilt-card {
+    position: relative;
+    isolation: isolate;            /* keep the difference blend inside the card */
+    overflow: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 224px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    transform-style: preserve-3d;
+    transition: scale 0.4s ease-out, box-shadow 0.4s ease-out, border-color 0.4s ease-out;
+    will-change: transform;
+  }
+  .tilt-card:hover {
+    scale: 1.05;
+    z-index: 2;
+    border-color: rgba(168, 85, 247, 0.45);
+    box-shadow: 0 22px 44px -18px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(168, 85, 247, 0.12);
+  }
+  .tc-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 20px 24px 0;
+  }
+  .tc-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+  }
+  .tc-title {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--text);
+  }
+  .tc-desc {
+    font-size: 0.875rem;
+    color: rgba(237, 237, 242, 0.5);
+  }
+  .tc-pill {
+    display: inline-flex;
+    align-items: center;
+    height: fit-content;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+  .tc-pill .l {
+    border-radius: 999px 0 0 999px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 4px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text);
+  }
+  .tc-pill .r {
+    border-radius: 0 999px 999px 0;
+    padding: 4px 9px;
+  }
+  .tc-pill .r.success { background: rgba(147, 249, 210, 0.14); color: #93f9d2; }
+  .tc-pill .r.warning { background: rgba(245, 158, 11, 0.20); color: #fcd34d; }
+  .tc-body { padding: 0 24px 22px; }
+  .tc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .tc-list li {
+    color: var(--text-dim);
+    font-size: 0.93rem;
+    padding-left: 18px;
+    position: relative;
+    transition: color 0.3s ease;
+  }
+  .tc-list li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+  .tilt-card:hover .tc-list li { color: var(--text); }
+  /* ClippedCircle */
+  .tc-clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  .tc-circle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    /* pale lavender: inverts the dark card to lavender with near-black text.
+       Swap for rgba(255,255,255,0.2) to get unlumen's subtle default. */
+    background: var(--tilt-circle, #f3e3ff);
+    mix-blend-mode: difference;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    pointer-events: none;
+  }
+  .tc-circle.on { transform: translate(-50%, -50%) scale(1); }
+  @media (prefers-reduced-motion: reduce) {
+    .tilt-card:hover { scale: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fold-text-piece { transform: none !important; opacity: 1 !important; }
+    .fold-text-piece::after { opacity: 0 !important; }
+  }
+
+  /* ========================================================
      MARQUEE — single font, single solid color, consistent
      ======================================================== */
   .marquee {
@@ -851,6 +1060,14 @@
     text-transform: lowercase;
   }
   .prow .desc { color: var(--text-dim); font-size: 0.95rem; line-height: 1.55; }
+  .prow .desc code {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.86em;
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
   .prow .meta {
     display: flex;
     flex-direction: column;
@@ -1490,6 +1707,133 @@
   }
 
   /* ========================================================
+     READABILITY OVER WEBGL — glass cards, panels, text shadows
+     ======================================================== */
+  .tilt-card, .stile, .cert, .channel, .clock-card, .exploring,
+  .gh-cta, .role-row .chip, .exploring .pills span, .roadmap span {
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+  }
+  .roadmap span { background: var(--surface); }
+  .exploring {
+    background: linear-gradient(180deg, rgba(168,85,247,0.10), rgba(20,15,36,0.80));
+  }
+
+  /* Work page: the row list sits on a dark glass panel */
+  .project-list {
+    background: rgba(13, 10, 24, 0.70);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 6px 28px;
+    backdrop-filter: blur(16px) saturate(120%);
+    -webkit-backdrop-filter: blur(16px) saturate(120%);
+  }
+  .prow:first-child { border-top: 0; }
+  .prow:last-child  { border-bottom: 0; }
+  .prow:hover { padding-left: 18px; padding-right: 18px; }
+
+  /* About page: facts list on a panel too */
+  .facts {
+    background: rgba(13, 10, 24, 0.66);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 4px 20px;
+    border-top: 1px solid var(--line);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+  }
+  .fact-row:last-child { border-bottom: 0; }
+
+  /* About: school path (Černošice → SSPŠ Prague) — same glass panel as .facts */
+  .edu-path {
+    margin-top: 18px;
+    background: rgba(13, 10, 24, 0.66);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 18px 20px 4px;
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+  }
+  .edu-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-bottom: 16px;
+  }
+  .edu-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 10px 64px 1fr;
+    align-items: start;
+    column-gap: 16px;
+    padding-bottom: 18px;
+  }
+  /* connector line between the dots */
+  .edu-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 4.5px;
+    top: 19px;
+    bottom: -4px;
+    width: 1px;
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.25), rgba(147, 249, 210, 0.6));
+  }
+  .edu-dot {
+    width: 10px;
+    height: 10px;
+    margin-top: 6px;
+    border-radius: 50%;
+    border: 1px solid var(--text-mute);
+    background: var(--bg);
+  }
+  .edu-step.now .edu-dot {
+    background: var(--accent-2);
+    border-color: var(--accent-2);
+    box-shadow: 0 0 10px var(--accent-2);
+    animation: blink 2s ease-in-out infinite;
+  }
+  .edu-when {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin-top: 5px;
+  }
+  .edu-step.now .edu-when { color: var(--accent-2); }
+  .edu-what {
+    color: var(--text-dim);
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .edu-step.now .edu-what { color: var(--text); }
+  .edu-what a { color: var(--accent); transition: color 0.3s; }
+  .edu-what a:hover { color: var(--text); }
+  .edu-what small {
+    display: block;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--text-mute);
+  }
+
+  .marquee {
+    background: rgba(12, 10, 22, 0.58);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  /* soft shadow under body copy so thin text survives bright wave bands */
+  .hero-sub, .bio-block p, .bio-block h3, .contact-left .sub,
+  .work-count, .eyebrow, .home-meta .col, .hand-quote,
+  .section-title-mini, h2.display, h1.display {
+    text-shadow: 0 1px 2px rgba(10,10,16,0.9), 0 2px 18px rgba(10,10,16,0.75);
+  }
+
+  /* ========================================================
      LOADER
      ======================================================== */
   #loader {
@@ -1551,7 +1895,7 @@
   }
 </style>
 </head>
-<body>
+<body data-page="home">
 
 <!-- LOADER -->
 <div id="loader">
@@ -1562,10 +1906,12 @@
   </div>
 </div>
 
-<!-- BACKGROUND — cursor + scroll-reactive layers -->
-<div class="bg-layer bg-aurora"></div>
-<canvas class="bg-layer" id="bg-canvas" aria-hidden="true"></canvas>
-<div class="bg-layer bg-spot"></div>
+<!-- BACKGROUND — per-page WebGL layers (React Bits ports) + overlays
+     home → LineWaves · work → ColorBends · skills/about/contact → Beams -->
+<div class="bg-layer bg-gl" id="bg-home" aria-hidden="true"></div>
+<div class="bg-layer bg-gl" id="bg-work" aria-hidden="true"></div>
+<div class="bg-layer bg-gl" id="bg-rest" aria-hidden="true"></div>
+<div class="bg-layer bg-scrim"></div>
 <div class="bg-layer bg-noise"></div>
 <div class="bg-layer bg-vig"></div>
 
@@ -1612,7 +1958,6 @@
       <div class="links">
         <a href="mailto:ondrej@pavlis.net">ondrej@pavlis.net</a>
         <a href="https://github.com/OPavlis10" target="_blank" rel="noopener noreferrer">github / opavlis10</a>
-        <a href="https://ondrej.pavlis.net" target="_blank" rel="noopener noreferrer">ondrej.pavlis.net</a>
       </div>
       <div class="stamp-mini">[ OP · v2.0 · 2026 ]</div>
     </div>
@@ -1628,10 +1973,7 @@
       <div class="home-wrap">
         <div class="eyebrow">Student · Developer · Cybersecurity Enthusiast</div>
 
-        <h1 class="display">
-          <span class="line-mask"><span>Ondřej</span></span>
-          <span class="line-mask"><span>Pavlis<span class="accent">.</span></span></span>
-        </h1>
+        <h1 class="display tech-text"><span class="tt-src">Ondřej<br>Pavlis<span class="accent">.</span></span></h1>
 
         <p class="hero-sub">
           Passionate about <span class="accent">fitness</span>, technology, and pushing boundaries through code. Building stuff cause I can — small things, broken things, fixed things. Learning how systems work along the way.
@@ -1704,7 +2046,7 @@
       <div class="eyebrow">02 · selected work / things i've shipped</div>
 
       <div class="work-head stagger">
-        <h2 class="display">Things I've<br/>built or broken.</h2>
+        <h2 class="display" data-fold>Things I've<br/>built or broken.</h2>
         <div class="work-count">total <strong>14</strong> · click any to open the live page ↗</div>
       </div>
 
@@ -1747,7 +2089,7 @@
         <a class="prow" href="https://opavlis10.github.io/Portfolio/" target="_blank" rel="noopener noreferrer">
           <div class="idx">04</div>
           <div class="name">Old Portfolio<small>opavlis10.github.io/Portfolio</small></div>
-          <div class="desc">Previous personal portfolio — cybersecurity focus, penetration testing &amp; security analysis. Live at the canonical domain.</div>
+          <div class="desc">Previous personal portfolio — cybersecurity focus, penetration testing &amp; security analysis.</div>
           <div class="meta">
             <div class="tags"><span>HTML</span><span>Portfolio</span><span>Live</span></div>
             <div class="go">Open page <span class="arr">↗</span></div>
@@ -1776,7 +2118,7 @@
           </div>
         </a>
 
-        <!-- 07 Subdomain &amp; Attack Surface Mapper -->
+        <!-- 07 Subdomain & Attack Surface Mapper -->
         <a class="prow" href="https://opavlis10.github.io/SUBDOMAIN-AND-ATTACK-MAPPER/" target="_blank" rel="noopener noreferrer">
           <div class="idx">07</div>
           <div class="name">Subdomain &amp; Attack Surface Mapper<small>opavlis10.github.io/SUBDOMAIN-AND-ATTACK-MAPPER</small></div>
@@ -1878,7 +2220,7 @@
     <div class="container">
       <div class="skills-head stagger">
         <div class="eyebrow">03 · [KINDA] SKILLED AT</div>
-        <h2 class="display">The toolkit<span class="accent">.</span></h2>
+        <h2 class="display" data-fold>The toolkit<span class="accent">.</span></h2>
       </div>
 
       <!-- Skills marquee — same font, same accent color, just compact size -->
@@ -1927,52 +2269,89 @@
       </div>
 
       <div class="skill-cats stagger">
-        <div class="skill-cat">
-          <div class="cat-head">Languages</div>
-          <h4>What I write in</h4>
-          <ul>
-            <li>Python — scripting &amp; small games</li>
-            <li>HTML &amp; CSS — layout / typography</li>
-            <li>JavaScript — sites, small tools</li>
-            <li>Shell — bash &amp; zsh basics</li>
-          </ul>
+        <div class="tilt-wrap">
+          <div class="tilt-card">
+            <div class="tc-head">
+              <div class="tc-main">
+                <h4 class="tc-title">What I write in</h4>
+                <p class="tc-desc">Languages</p>
+              </div>
+              <div class="tc-pill"><span class="l">04</span><span class="r success">Active</span></div>
+            </div>
+            <div class="tc-body">
+              <ul class="tc-list">
+                <li>Python — scripting &amp; small games</li>
+                <li>HTML &amp; CSS — layout / typography</li>
+                <li>JavaScript — sites, small tools</li>
+                <li>Shell — bash &amp; zsh basics</li>
+              </ul>
+            </div>
+            <div class="tc-clip" aria-hidden="true"><div class="tc-circle"></div></div>
+          </div>
         </div>
-
-        <div class="skill-cat">
-          <div class="cat-head">Tools</div>
-          <h4>Daily drivers</h4>
-          <ul>
-            <li>Git &amp; GitHub — workflow</li>
-            <li>Homebrew — package management</li>
-            <li>btop — system monitor</li>
-            <li>VS Code &amp; Terminal</li>
-          </ul>
+        <div class="tilt-wrap">
+          <div class="tilt-card">
+            <div class="tc-head">
+              <div class="tc-main">
+                <h4 class="tc-title">Daily drivers</h4>
+                <p class="tc-desc">Tools</p>
+              </div>
+              <div class="tc-pill"><span class="l">04</span><span class="r success">Daily</span></div>
+            </div>
+            <div class="tc-body">
+              <ul class="tc-list">
+                <li>Git &amp; GitHub — workflow</li>
+                <li>Homebrew — package management</li>
+                <li>btop — system monitor</li>
+                <li>VS Code &amp; Terminal</li>
+              </ul>
+            </div>
+            <div class="tc-clip" aria-hidden="true"><div class="tc-circle"></div></div>
+          </div>
         </div>
-
-        <div class="skill-cat">
-          <div class="cat-head">Systems</div>
-          <h4>Where it runs</h4>
-          <ul>
-            <li>macOS — primary OS</li>
-            <li>Windows — secondary / dual</li>
-            <li>Linux — curious &amp; learning</li>
-            <li>CLI navigation &amp; troubleshooting</li>
-          </ul>
+        <div class="tilt-wrap">
+          <div class="tilt-card">
+            <div class="tc-head">
+              <div class="tc-main">
+                <h4 class="tc-title">Where it runs</h4>
+                <p class="tc-desc">Systems</p>
+              </div>
+              <div class="tc-pill"><span class="l">04</span><span class="r success">Stable</span></div>
+            </div>
+            <div class="tc-body">
+              <ul class="tc-list">
+                <li>macOS — primary OS</li>
+                <li>Windows — secondary / dual</li>
+                <li>Linux — curious &amp; learning</li>
+                <li>CLI navigation &amp; troubleshooting</li>
+              </ul>
+            </div>
+            <div class="tc-clip" aria-hidden="true"><div class="tc-circle"></div></div>
+          </div>
         </div>
-
-        <div class="skill-cat">
-          <div class="cat-head">Curious about</div>
-          <h4>What's next</h4>
-          <ul>
-            <li>Ethical hacking &amp; pentest tooling</li>
-            <li>Networking — packets, DNS, ports</li>
-            <li>CTF labs &amp; security writeups</li>
-            <li>System optimization &amp; automation</li>
-          </ul>
+        <div class="tilt-wrap">
+          <div class="tilt-card">
+            <div class="tc-head">
+              <div class="tc-main">
+                <h4 class="tc-title">What's next</h4>
+                <p class="tc-desc">Curious about</p>
+              </div>
+              <div class="tc-pill"><span class="l">04</span><span class="r warning">Learning</span></div>
+            </div>
+            <div class="tc-body">
+              <ul class="tc-list">
+                <li>Ethical hacking &amp; pentest tooling</li>
+                <li>Networking — packets, DNS, ports</li>
+                <li>CTF labs &amp; security writeups</li>
+                <li>System optimization &amp; automation</li>
+              </ul>
+            </div>
+            <div class="tc-clip" aria-hidden="true"><div class="tc-circle"></div></div>
+          </div>
         </div>
       </div>
 
-      <h3 class="section-title-mini">Stack tiles</h3>
+      <h3 class="section-title-mini" data-fold>Stack tiles</h3>
       <div class="stack-grid">
         <div class="stile"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-3 0-3 1.5-3 1.5V6h3v0.6H6c-1.5 0-3 1-3 4s1.4 4 3 4h1.5v-2.1c0-1.7 1.3-3 3-3h4c1.3 0 2.5-1 2.5-2.4V3.6S17.4 2 12 2zm-2 1.5a.9.9 0 110 1.8.9.9 0 010-1.8zM21 8h-1.5v2.1c0 1.7-1.3 3-3 3h-4c-1.3 0-2.5 1-2.5 2.4v3.9S9.6 22 15 22c3 0 3-1.5 3-1.5V18h-3v-.6h6c1.5 0 3-1 3-4s-1.4-4-3-4zm-7 11.7a.9.9 0 110 1.8.9.9 0 010-1.8z"/></svg><span class="lbl">Python</span></div>
         <div class="stile"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 2l1.6 18L12 22l7.4-2L21 2H3zm14.5 5.5H8L8.2 10h9.1l-.5 6.4-4.8 1.3-4.8-1.3-.3-3.5h2.4l.2 1.7 2.6.7 2.6-.7.3-3.1H7.6L7 6h11l-.5 1.5z"/></svg><span class="lbl">HTML</span></div>
@@ -2038,9 +2417,12 @@
 
       <div class="about-grid stagger">
         <div class="bio-block">
-          <h3>I'm a <span class="accent">student</span>, <span class="accent">developer</span>, and <span class="accent">cybersecurity enthusiast</span> from a small town outside Prague.</h3>
+          <h3 data-fold data-fold-split="word">I'm a <span class="accent">student</span> at <span class="accent">SSPŠ Prague</span>, a <span class="accent">developer</span>, and a <span class="accent">cybersecurity enthusiast</span> from a small town just outside the city.</h3>
           <p>
             I'm passionate about <strong>fitness, technology, and pushing boundaries through code</strong>. Right now I'm learning how systems work — networking, terminal tools, web stacks — and writing small Python and HTML projects along the way.
+          </p>
+          <p>
+            School-wise, I've swapped Černošice for Prague: I now study at <strong>SSPŠ</strong> — the Smíchovská střední průmyslová škola on Preslova street in Smíchov, a technical school that has been around since 1901. Mornings start with the train into the city, and whatever I pick up in class usually ends up as a small project on this site.
           </p>
           <p>
             Most days I'm experimenting in the terminal, reading about ethical hacking, or sketching out a fitness app concept. Other days I'm at the gym thinking about the same things.
@@ -2067,11 +2449,15 @@
               <span class="v">@opavlis10</span>
             </div>
             <div class="fact-row">
-              <span class="k">Where</span>
+              <span class="k">Based</span>
               <span class="v">Černošice, Czech Republic</span>
             </div>
             <div class="fact-row">
-              <span class="k">Studying</span>
+              <span class="k">School</span>
+              <span class="v"><a href="https://www.ssps.cz" target="_blank" rel="noopener noreferrer">SSPŠ · Smíchov, Prague ↗</a></span>
+            </div>
+            <div class="fact-row">
+              <span class="k">Focus</span>
               <span class="v">Cybersec · Web · Networking</span>
             </div>
             <div class="fact-row">
@@ -2082,15 +2468,26 @@
               <span class="k">Status</span>
               <span class="v"><span class="pulse"></span>Open to collab &amp; learning</span>
             </div>
-            <div class="fact-row">
-              <span class="k">Old site</span>
-              <span class="v"><a href="https://ondrej.pavlis.net" target="_blank" rel="noopener noreferrer">ondrej.pavlis.net ↗</a></span>
+          </div>
+
+          <!-- school path: Černošice → SSPŠ Prague -->
+          <div class="edu-path">
+            <div class="edu-head">// school path</div>
+            <div class="edu-step">
+              <span class="edu-dot"></span>
+              <span class="edu-when">Before</span>
+              <span class="edu-what">School in Černošice<small>the small town just outside Prague</small></span>
+            </div>
+            <div class="edu-step now">
+              <span class="edu-dot"></span>
+              <span class="edu-when">Now</span>
+              <span class="edu-what"><a href="https://www.ssps.cz" target="_blank" rel="noopener noreferrer">SSPŠ</a> — Smíchovská SPŠ, Prague<small>Preslova 25 · Praha 5 – Smíchov · since 1901</small></span>
             </div>
           </div>
         </div>
       </div>
 
-      <h3 class="section-title-mini">Certifications</h3>
+      <h3 class="section-title-mini" data-fold>Certifications</h3>
       <div class="certs-grid">
         <div class="cert">
           <span class="cat">Tech Event · Praha</span>
@@ -2106,7 +2503,7 @@
         </div>
       </div>
 
-      <h3 class="section-title-mini">Roadmap</h3>
+      <h3 class="section-title-mini" data-fold>Roadmap</h3>
       <div class="roadmap">
         <span>CompTIA Security+</span>
         <span>CompTIA Network+</span>
@@ -2126,7 +2523,7 @@
 
       <div class="contact-wrap stagger">
         <div class="contact-left">
-          <h2 class="display">
+          <h2 class="display" data-fold>
             <small>Drop a line —</small>
             Let's talk.
           </h2>
@@ -2147,17 +2544,6 @@
               <div class="info">
                 <div class="lab">GitHub</div>
                 <div class="val">@OPavlis10</div>
-              </div>
-              <span class="arr">↗</span>
-            </a>
-
-            <a class="channel" href="https://ondrej.pavlis.net" target="_blank" rel="noopener noreferrer">
-              <span class="ic">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
-              </span>
-              <div class="info">
-                <div class="lab">Website (old)</div>
-                <div class="val">ondrej.pavlis.net</div>
               </div>
               <span class="arr">↗</span>
             </a>
@@ -2212,8 +2598,8 @@
   window.addEventListener('load', () => {
     // a beat longer so the progress bar gets to finish — feels intentional
     setTimeout(() => document.getElementById('loader').classList.add('gone'), 1500);
-    // kick off the per-letter hero reveal after the loader is on its way out
-    setTimeout(splitAndRevealHero, 1700);
+    // unfold the headings on the first page once the loader is on its way out
+    setTimeout(() => window.__foldPage && window.__foldPage(document.querySelector('.page.active')), 1650);
   });
 
   // ============================================================
@@ -2274,7 +2660,7 @@
   // Reset parallax when switching pages so a fresh page starts at the top of the bg
   function resetScrollTarget() { targetScrollY = 0; }
 
-  document.querySelectorAll('a, button, .prow, .stile, .cert, .channel, .chip, .skill-cat').forEach(el => {
+  document.querySelectorAll('a, button, .prow, .stile, .cert, .channel, .chip, .tilt-card').forEach(el => {
     el.addEventListener('mouseenter', () => ring && ring.classList.add('hov'));
     el.addEventListener('mouseleave', () => ring && ring.classList.remove('hov'));
   });
@@ -2378,60 +2764,6 @@
   document.querySelectorAll('.clock-card').forEach(c => attachTilt(c, 7));
 
   // ============================================================
-  // HERO — per-letter reveal on first home visit (rare wow)
-  // ============================================================
-  let heroSplitDone = false;
-  function splitAndRevealHero() {
-    if (heroSplitDone || PREFERS_REDUCED) return;
-    const home = document.querySelector('.page[data-page="home"]');
-    if (!home) return;
-    const lines = home.querySelectorAll('h1.display .line-mask > span');
-    lines.forEach((line, lineIdx) => {
-      // walk child nodes — preserve nested <span class="accent">.</span>
-      const frag = document.createDocumentFragment();
-      [...line.childNodes].forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          [...node.textContent].forEach(ch => {
-            const s = document.createElement('span');
-            s.className = 'split-char';
-            s.textContent = ch === ' ' ? ' ' : ch;
-            frag.appendChild(s);
-          });
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          // wrap each char inside the nested element too
-          const inner = node.textContent;
-          const wrap = node.cloneNode(false);
-          [...inner].forEach(ch => {
-            const s = document.createElement('span');
-            s.className = 'split-char';
-            s.textContent = ch === ' ' ? ' ' : ch;
-            wrap.appendChild(s);
-          });
-          frag.appendChild(wrap);
-        }
-      });
-      // The .line-mask outer wrapper still drives the initial slide-up.
-      // Once that has played, swap in the per-letter version on top of it
-      // so we get a second, finer-grained reveal.
-      line.innerHTML = '';
-      line.appendChild(frag);
-    });
-    // remove the line-mask y-translation immediately since chars handle reveal
-    home.querySelectorAll('h1.display .line-mask > span').forEach(s => {
-      s.style.transform = 'translateY(0)';
-      s.style.opacity = '1';
-    });
-    // stagger char reveal
-    const allChars = home.querySelectorAll('h1.display .split-char');
-    allChars.forEach((c, i) => {
-      c.style.transitionDelay = (i * 0.035) + 's';
-      // next frame so the transition fires
-      requestAnimationFrame(() => requestAnimationFrame(() => c.classList.add('in')));
-    });
-    heroSplitDone = true;
-  }
-
-  // ============================================================
   // MENU OVERLAY
   // ============================================================
   const menuBtn      = document.getElementById('menuBtn');
@@ -2456,8 +2788,31 @@
   const pageStamp = document.getElementById('pageNumStamp');
   const order = ['home','work','skills','about','contact'];
 
+  // ---- background routing: which WebGL layer is live for which page ----
+  function setBgPage(p) {
+    if (document.body.dataset.page === p) return;
+    document.body.dataset.page = p;
+    document.dispatchEvent(new CustomEvent('pagechange', { detail: p }));
+  }
+  // Modules call this to run only while their page is showing.
+  // Keeps rendering ~1.2s after leaving so the opacity crossfade stays smooth.
+  window.__bindBg = function (pages, start, stop) {
+    let active = false, stopTimer = null;
+    function apply(page) {
+      const on = pages.includes(page);
+      if (on && !active) { active = true; clearTimeout(stopTimer); if (!document.hidden) start(); }
+      else if (!on && active) { active = false; stopTimer = setTimeout(stop, 1200); }
+    }
+    document.addEventListener('pagechange', e => apply(e.detail));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop(); else if (active) start();
+    });
+    apply(document.body.dataset.page || 'home');
+  };
+
   function go(target, skipHistory) {
     if (!target) target = 'home';
+    setBgPage(target);
     const current = document.querySelector('.page.active');
     if (current && current.getAttribute('data-page') === target) {
       toggleMenu(false);
@@ -2478,6 +2833,8 @@
         next.classList.add('active');
         next.scrollTop = 0;
         resetScrollTarget();
+        // unfold this page's headings (FoldText) once the page is fading in
+        if (window.__foldPage) setTimeout(() => window.__foldPage(next), 280);
       }, 260);
     }
 
@@ -2561,260 +2918,1627 @@
   setInterval(updateClocks, 1000);
 
   // ============================================================
-  // BACKGROUND — CANVAS PARTICLE CONSTELLATION
-  // Mouse repels nearby particles. Click sends out a ripple wave.
-  // Lines connect close particles and shift color near the cursor.
-  // ============================================================
-  (function bgCanvas() {
-    if (PREFERS_REDUCED) return;
-    const canvas = document.getElementById('bg-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: true });
-
-    const DPR = Math.min(window.devicePixelRatio || 1, 2);
-    let W = 0, H = 0;
-    let particles = [];
-    let ripples = [];
-    let running = true;
-
-    // tuneables — bumped on big screens, leaner on tiny ones
-    function targetCount() {
-      const area = W * H;
-      // ~1 particle per 14k px², capped
-      return Math.min(IS_TOUCH ? 60 : 120, Math.max(36, Math.floor(area / 14000)));
-    }
-    const LINK_DIST = 138;
-    const LINK_DIST_SQ = LINK_DIST * LINK_DIST;
-    const REPEL_DIST = 230;
-    const HOVER_DIST = 280;
-
-    function size() {
-      W = window.innerWidth;
-      H = window.innerHeight;
-      canvas.width = Math.floor(W * DPR);
-      canvas.height = Math.floor(H * DPR);
-      canvas.style.width = W + 'px';
-      canvas.style.height = H + 'px';
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    }
-
-    function spawn() {
-      const n = targetCount();
-      particles = [];
-      for (let i = 0; i < n; i++) {
-        const depth = 0.35 + Math.random() * 0.65; // 0.35–1.0
-        particles.push({
-          x: Math.random() * W,
-          y: Math.random() * H,
-          vx: (Math.random() - 0.5) * 0.2,
-          vy: (Math.random() - 0.5) * 0.2,
-          depth,
-          r: 0.55 + depth * 1.7,
-          baseAlpha: 0.18 + depth * 0.42,
-          seed: Math.random() * 1000
-        });
-      }
-    }
-
-    size(); spawn();
-
-    let resizeRaf;
-    window.addEventListener('resize', () => {
-      cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(() => { size(); spawn(); });
-    });
-
-    // click anywhere → ripple wave
-    document.addEventListener('mousedown', (e) => {
-      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, alpha: 1 });
-      if (ripples.length > 6) ripples.shift();
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      running = !document.hidden;
-      if (running) { lastT = performance.now(); requestAnimationFrame(loop); }
-    });
-
-    let lastT = performance.now();
-    function loop(t) {
-      if (!running) return;
-      // dt normalized to 60fps so motion is frame-rate-independent
-      const dt = Math.min(50, t - lastT) / 16.67;
-      lastT = t;
-
-      ctx.clearRect(0, 0, W, H);
-
-      // mx/my live in outer scope (the main cursor tick uses them too)
-      const mxN = mx, myN = my;
-
-      // update ripples (click-driven shockwaves)
-      for (const r of ripples) {
-        r.radius += 10 * dt;
-        r.alpha  *= Math.pow(0.95, dt);
-      }
-      ripples = ripples.filter(r => r.alpha > 0.04 && r.radius < Math.max(W, H) * 1.4);
-
-      // update particles
-      for (const p of particles) {
-        // slow ambient flow field (curl-like swirl)
-        const fx = Math.cos(p.x * 0.0035 + p.y * 0.005 + t * 0.00022 + p.seed);
-        const fy = Math.sin(p.y * 0.0035 - p.x * 0.005 + t * 0.00022 + p.seed * 0.7);
-        p.vx += fx * 0.0014;
-        p.vy += fy * 0.0014;
-
-        // cursor repulsion
-        const dx = p.x - mxN;
-        const dy = p.y - myN;
-        const dsq = dx * dx + dy * dy;
-        if (dsq < REPEL_DIST * REPEL_DIST && dsq > 0.5) {
-          const d = Math.sqrt(dsq);
-          const f = (1 - d / REPEL_DIST) * 0.85 * p.depth;
-          p.vx += (dx / d) * f;
-          p.vy += (dy / d) * f;
-        }
-
-        // ripple shockwave forces
-        for (const r of ripples) {
-          const rdx = p.x - r.x;
-          const rdy = p.y - r.y;
-          const rd = Math.sqrt(rdx * rdx + rdy * rdy);
-          const ringDiff = Math.abs(rd - r.radius);
-          if (ringDiff < 45 && rd > 0.5) {
-            const rf = (1 - ringDiff / 45) * r.alpha * 2.4 * p.depth;
-            p.vx += (rdx / rd) * rf;
-            p.vy += (rdy / rd) * rf;
-          }
-        }
-
-        // damp
-        p.vx *= 0.93;
-        p.vy *= 0.93;
-
-        // integrate
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-
-        // wrap
-        if (p.x < -12) p.x = W + 12;
-        if (p.x > W + 12) p.x = -12;
-        if (p.y < -12) p.y = H + 12;
-        if (p.y > H + 12) p.y = -12;
-      }
-
-      // ---- LINES ----
-      ctx.lineWidth = 0.75;
-      for (let i = 0; i < particles.length; i++) {
-        const a = particles[i];
-        for (let j = i + 1; j < particles.length; j++) {
-          const b = particles[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const dsq = dx * dx + dy * dy;
-          if (dsq < LINK_DIST_SQ) {
-            const d = Math.sqrt(dsq);
-            const baseA = (1 - d / LINK_DIST) * 0.16;
-            // distance from line midpoint to cursor → cleaner "near mouse" check
-            const midx = (a.x + b.x) * 0.5;
-            const midy = (a.y + b.y) * 0.5;
-            const mdx = midx - mxN;
-            const mdy = midy - myN;
-            const md = Math.sqrt(mdx * mdx + mdy * mdy);
-            const boost = Math.max(0, 1 - md / HOVER_DIST);
-            const finalA = baseA + boost * 0.65 * (1 - d / LINK_DIST);
-
-            // color shift: passive white → violet → mint near cursor
-            let strokeR, strokeG, strokeB;
-            if (boost > 0.5) {
-              strokeR = 147; strokeG = 249; strokeB = 210;   // mint
-            } else if (boost > 0.18) {
-              strokeR = 200; strokeG = 180; strokeB = 255;   // violet
-            } else {
-              strokeR = 255; strokeG = 255; strokeB = 255;   // soft white
-            }
-            ctx.strokeStyle = `rgba(${strokeR},${strokeG},${strokeB},${finalA})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // ---- PARTICLES ----
-      for (const p of particles) {
-        const dx = p.x - mxN;
-        const dy = p.y - myN;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        const prox = Math.max(0, 1 - d / HOVER_DIST);
-        const alpha = Math.min(1, p.baseAlpha + prox * 0.65);
-        const radius = p.r + prox * 1.5;
-
-        // glow halo for particles near cursor — drawn as a soft second layer
-        if (prox > 0.18) {
-          const haloR = radius * (2.2 + prox * 1.5);
-          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, haloR);
-          if (prox > 0.55) {
-            g.addColorStop(0, `rgba(147, 249, 210, ${0.32 * prox})`);
-            g.addColorStop(1, 'rgba(147, 249, 210, 0)');
-          } else {
-            g.addColorStop(0, `rgba(200, 180, 255, ${0.32 * prox})`);
-            g.addColorStop(1, 'rgba(200, 180, 255, 0)');
-          }
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, haloR, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // core dot
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-        if (prox > 0.55) {
-          ctx.fillStyle = `rgba(200, 240, 230, ${alpha})`;
-        } else if (prox > 0.18) {
-          ctx.fillStyle = `rgba(220, 205, 255, ${alpha})`;
-        } else {
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-        }
-        ctx.fill();
-      }
-
-      // ---- RIPPLE RINGS ----
-      for (const r of ripples) {
-        // outer fade
-        ctx.beginPath();
-        ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(147, 249, 210, ${r.alpha * 0.40})`;
-        ctx.lineWidth = 1.1;
-        ctx.stroke();
-
-        // a softer inner echo
-        if (r.radius > 24) {
-          ctx.beginPath();
-          ctx.arc(r.x, r.y, r.radius - 18, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(200, 180, 255, ${r.alpha * 0.18})`;
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
-        }
-      }
-
-      requestAnimationFrame(loop);
-    }
-
-    // fade canvas in once the first frame has rendered
-    requestAnimationFrame((t) => {
-      lastT = t;
-      requestAnimationFrame(loop);
-      canvas.classList.add('ready');
-    });
-  })();
-
-  // ============================================================
   // CONSOLE EGG
   // ============================================================
   console.log('%c+ Ondřej Pavlis', 'font:600 22px Inter,sans-serif;color:#ededf2;');
   console.log('%c  build · break · learn — opavlis10', 'font:13px JetBrains Mono,monospace;color:#c8b4ff;');
   console.log('%c  "Be uncommon amongst uncommon people." — DG', 'font:13px serif;font-style:italic;color:#93f9d2;');
+</script>
+
+<!-- ============================================================
+     FOLDTEXT — vanilla port of the React Bits <FoldText /> component
+     Headings tagged [data-fold] are split in place (chars or words),
+     each piece folds in from the top on page activation, and pieces
+     further down a page unfold as they scroll into view.
+     ============================================================ -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+  (function () {
+    if (!window.gsap) return;
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // props — mirror the React component (hinge: top, trigger: on page show / scroll)
+    const FOLD = {
+      splitBy: 'char',
+      hinge: 'top',
+      duration: 0.65,
+      stagger: 0.045,
+      ease: 'power3.out',
+      perspective: 700,
+      creaseShading: 0.55
+    };
+    const HINGE = {
+      top:    { origin: '50% 0%',   rotateX: -92, rotateY: 0 },
+      bottom: { origin: '50% 100%', rotateX: 92,  rotateY: 0 },
+      left:   { origin: '0% 50%',   rotateX: 0,   rotateY: 92 },
+      right:  { origin: '100% 50%', rotateX: 0,   rotateY: -92 }
+    };
+
+    // ---- split a heading in place, preserving nested markup (<br>, .accent, <small>) ----
+    function foldify(el) {
+      if (el.dataset.foldReady) return;
+      const splitBy = el.dataset.foldSplit || FOLD.splitBy;
+      const hingeName = el.dataset.foldHinge || FOLD.hinge;
+      const hinge = HINGE[hingeName] || HINGE.top;
+      const text = el.textContent.replace(/\s+/g, ' ').trim();
+
+      const segment = (content) => {
+        const seg = document.createElement('span');
+        seg.className = 'fold-text-segment';
+        seg.dataset.foldSplit = splitBy;
+        seg.style.setProperty('--fold-perspective', Math.max(120, FOLD.perspective) + 'px');
+        const piece = document.createElement('span');
+        piece.className = 'fold-text-piece';
+        piece.dataset.foldHinge = hingeName;
+        piece.style.transformOrigin = hinge.origin;
+        piece.style.setProperty('--fold-crease', '0');
+        piece.textContent = content || ' ';
+        seg.appendChild(piece);
+        return seg;
+      };
+
+      const walk = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const frag = document.createDocumentFragment();
+          node.nodeValue.split(/(\s+)/).forEach(part => {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+            if (splitBy === 'word') { frag.appendChild(segment(part)); return; }
+            // char mode: keep each word in a nowrap box so lines only break at spaces
+            const word = document.createElement('span');
+            word.className = 'fold-text-word';
+            Array.from(part).forEach(ch => word.appendChild(segment(ch)));
+            frag.appendChild(word);
+          });
+          node.parentNode.replaceChild(frag, node);
+        } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'BR') {
+          Array.from(node.childNodes).forEach(walk);
+        }
+      };
+      Array.from(el.childNodes).forEach(walk);
+
+      // a11y: screen readers get the plain string, the panels are decorative
+      const visual = document.createElement('span');
+      visual.className = 'fold-text-visual';
+      visual.setAttribute('aria-hidden', 'true');
+      while (el.firstChild) visual.appendChild(el.firstChild);
+      const sr = document.createElement('span');
+      sr.className = 'fold-text-sr-only';
+      sr.textContent = text;
+      el.appendChild(sr);
+      el.appendChild(visual);
+
+      el.classList.add('fold-text');
+      el.dataset.foldReady = '1';
+      el._foldHinge = hinge;
+      el._foldPieces = Array.from(el.querySelectorAll('.fold-text-piece'));
+    }
+
+    function fromVars(hinge) {
+      return {
+        opacity: 0,
+        rotateX: hinge.rotateX,
+        rotateY: hinge.rotateY,
+        '--fold-crease': Math.min(1, Math.max(0, FOLD.creaseShading)),
+        transformOrigin: hinge.origin,
+        force3D: true
+      };
+    }
+
+    function arm(el) {
+      foldify(el);
+      el.dataset.foldState = 'armed';
+      gsap.killTweensOf(el._foldPieces);
+      gsap.set(el._foldPieces, fromVars(el._foldHinge));
+    }
+
+    function play(el) {
+      if (el.dataset.foldState === 'played') return;
+      el.dataset.foldState = 'played';
+      const pieces = el._foldPieces;
+      gsap.killTweensOf(pieces);
+      gsap.fromTo(pieces, fromVars(el._foldHinge), {
+        opacity: 1,
+        rotateX: 0,
+        rotateY: 0,
+        '--fold-crease': 0,
+        duration: FOLD.duration,
+        ease: FOLD.ease,
+        // cap the cascade so long headings don't take forever
+        stagger: Math.min(FOLD.stagger, 1.3 / Math.max(1, pieces.length)),
+        clearProps: 'willChange'
+      });
+    }
+
+    // reveal any armed heading that is inside the page's visible scroll window
+    function revealVisible(page) {
+      const pr = page.getBoundingClientRect();
+      page.querySelectorAll('[data-fold][data-fold-state="armed"]').forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (r.top < pr.bottom - 24 && r.bottom > pr.top) play(el);
+      });
+    }
+
+    const headings = Array.from(document.querySelectorAll('[data-fold]'));
+
+    if (REDUCED) {
+      // no 3D fold — just make sure nothing stays hidden
+      headings.forEach(el => { el.dataset.foldState = 'played'; });
+      window.__foldPage = function () {};
+      return;
+    }
+
+    // split + arm everything up front so inactive pages never flash their headings
+    headings.forEach(arm);
+
+    // headings below the fold unfold on scroll (each .page scrolls on its own)
+    document.querySelectorAll('.page').forEach(page => {
+      page.addEventListener('scroll', () => {
+        if (page.classList.contains('active')) revealVisible(page);
+      }, { passive: true });
+    });
+
+    // called by the router when a page is shown: re-arm its headings, unfold the visible ones
+    window.__foldPage = function (page) {
+      if (!page) return;
+      page.querySelectorAll('[data-fold]').forEach(arm);
+      revealVisible(page);
+    };
+  })();
+</script>
+
+<!-- ============================================================
+     TECHTEXT — vanilla port of the React Bits <TechText /> component
+     Home hero "Ondřej Pavlis." Hover a letter → it turns into a dashed
+     vector outline inside a gliding selection frame with labels + specks.
+     Letters can be dragged off the baseline and spring back. When the
+     pointer is away, the reveal sweeps across the wordmark by itself.
+     Port notes: glyph positions are read from the real <h1> via DOM
+     Ranges (so the CSS typography/line break stays authoritative), it
+     supports 2 lines + a per-glyph accent colour, and it only renders
+     while the home page is showing.
+     ============================================================ -->
+<script>
+  (function () {
+    const h1 = document.querySelector('.page[data-page="home"] h1.tech-text');
+    const src = h1 && h1.querySelector('.tt-src');
+    if (!h1 || !src || !window.__bindBg) return;
+
+    // ---- props (mirror the React component) ----
+    const root = getComputedStyle(document.documentElement);
+    const S = {
+      fontWeight: 600,          // read from the h1 at layout time
+      fontSize: 150,            // the h1's CSS clamp() tops out at ~150px
+      color: root.getPropertyValue('--text').trim() || '#ededf2',
+      dotColor: root.getPropertyValue('--accent').trim() || '#c8b4ff',
+      accentColor: root.getPropertyValue('--accent').trim() || '#c8b4ff',
+      reach: 200,
+      softness: 0.7,
+      dashLength: 4,
+      dashGap: 2,
+      strokeWidth: 1.5,
+      lineStyle: 'dashed',
+      reveal: 'letter',
+      specks: 15,
+      selection: true,
+      labels: true,
+      draggable: true,
+      sweep: false,             // no idle animation — the wordmark only reacts when a letter is hovered
+      speed: 1
+    };
+
+    const PAD = 64;                       // must match the CSS inset of .tech-text-canvas
+    const LABEL_FONT = '10px "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    const FALLOFF_STEPS = 8;
+    const SPRING = 320;
+    const DAMPING = 22;
+
+    const approach = (current, target, dt, seconds) => current + (target - current) * (1 - Math.exp(-dt / seconds));
+    const hexToRgb = hex => {
+      let h = String(hex || '').replace('#', '');
+      if (h.length === 3) h = h.replace(/./g, c => c + c);
+      const n = parseInt(h.slice(0, 6), 16);
+      return Number.isNaN(n) ? [255, 255, 255] : [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    };
+    const rgba = (hex, alpha) => {
+      const [r, g, b] = hexToRgb(hex);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    const noise = (...values) => {
+      let h = 2166136261;
+      for (const value of values) {
+        h = Math.imul(h ^ (value | 0), 16777619);
+        h ^= h >>> 13;
+        h = Math.imul(h, 0x5bd1e995);
+        h ^= h >>> 15;
+      }
+      return (h >>> 0) / 4294967296;
+    };
+    const signed = value => (value > 0 ? `+${value}` : value < 0 ? `−${-value}` : '0');
+
+    const canvas = document.createElement('canvas');
+    canvas.className = 'tech-text-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    h1.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const scratch = document.createElement('canvas');
+    const scratchCtx = scratch.getContext('2d');
+    if (!ctx || !scratchCtx) return;
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ring = document.querySelector('.cursor-ring');
+    let width = 1, height = 1, dpr = 1;
+    let raf = 0, last = performance.now();
+    let visible = false, dirty = true;
+    let view = null, glyphs = [], lines = [];
+    let presence = 0, clock = 0, pulse = 0, placed = false, dragging = -1, ringHov = false;
+    const pointer = { x: 0, y: 0, inside: false };
+    const grab = { x: 0, y: 0 };
+    const lens = { x: 0, y: 0 };
+    const frame = { x1: 0, y1: 0, x2: 0, y2: 0, alpha: 0, index: -1 };
+
+    // h1 may be mid page-transition (scaled) — normalise to layout pixels
+    const h1Scale = r => (h1.offsetWidth ? r.width / h1.offsetWidth : 1) || 1;
+
+    const sprite = (glyph, stroke) => {
+      const pad = Math.ceil(S.strokeWidth * 2 + 4) + (stroke ? 0 : 22);  // fill gets room for its shadow
+      const left = glyph.box.x1 - pad;
+      const top = glyph.box.y1 - pad;
+      const w = glyph.box.x2 - glyph.box.x1 + pad * 2;
+      const h = glyph.box.y2 - glyph.box.y1 + pad * 2;
+      const image = document.createElement('canvas');
+      image.width = Math.max(1, Math.ceil(w * dpr));
+      image.height = Math.max(1, Math.ceil(h * dpr));
+      const c = image.getContext('2d');
+      if (!c) return { image, left, top };
+      c.setTransform(dpr, 0, 0, dpr, -left * dpr, -top * dpr);
+      c.font = glyph.font;
+      c.textAlign = 'left';
+      c.textBaseline = 'alphabetic';
+      if (stroke) {
+        c.lineJoin = 'round';
+        c.lineWidth = S.strokeWidth * 2;
+        c.lineCap = 'butt';
+        c.strokeStyle = glyph.color;
+        if (S.lineStyle !== 'solid') c.setLineDash([Math.max(1, S.dashLength), Math.max(1, S.dashGap)]);
+        c.strokeText(glyph.char, glyph.x, glyph.baseline);
+        c.setLineDash([]);
+        c.globalCompositeOperation = 'destination-out';
+        c.fillStyle = '#000000';
+        c.fillText(glyph.char, glyph.x, glyph.baseline);
+        c.globalCompositeOperation = 'source-over';
+      } else {
+        // same soft shadow the CSS gives the other headings (readability over the waves)
+        c.shadowColor = 'rgba(10, 10, 16, 0.7)';
+        c.shadowBlur = 16 * dpr;
+        c.shadowOffsetY = 2 * dpr;
+        c.fillStyle = glyph.color;
+        c.fillText(glyph.char, glyph.x, glyph.baseline);
+      }
+      return { image, left, top };
+    };
+
+    // ---- layout: read every glyph's position from the real DOM text ----
+    const measure = () => {
+      dirty = false;
+      const r = h1.getBoundingClientRect();
+      const sc = h1Scale(r);
+      width = h1.offsetWidth + PAD * 2;
+      height = h1.offsetHeight + PAD * 2;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+
+      const cs = getComputedStyle(h1);
+      const size = parseFloat(cs.fontSize) || S.fontSize;
+      const font = `${cs.fontWeight || S.fontWeight} ${size}px ${cs.fontFamily}`;
+      scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
+      scratchCtx.font = font;
+      const fm = scratchCtx.measureText('Hg');
+      const fA = fm.fontBoundingBoxAscent || size * 0.92;
+      const fD = fm.fontBoundingBoxDescent || size * 0.24;
+
+      const range = document.createRange();
+      const previous = glyphs;
+      glyphs = [];
+      const walker = document.createTreeWalker(src, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const color = node.parentElement.closest('.accent') ? S.dotColor : S.color;
+        let off = 0;
+        for (const ch of Array.from(node.nodeValue)) {
+          const len = ch.length;
+          if (ch.trim()) {
+            range.setStart(node, off);
+            range.setEnd(node, off + len);
+            const rr = range.getClientRects()[0] || range.getBoundingClientRect();
+            const gx = (rr.left - r.left) / sc + PAD;
+            const top = (rr.top - r.top) / sc + PAD;
+            const hgt = rr.height / sc;
+            const baseline = top + (hgt + fA - fD) / 2;
+            const m = scratchCtx.measureText(ch);
+            const base = {
+              char: ch, x: gx, baseline, font, color,
+              box: {
+                x1: gx - m.actualBoundingBoxLeft,
+                y1: baseline - m.actualBoundingBoxAscent,
+                x2: gx + m.actualBoundingBoxRight,
+                y2: baseline + m.actualBoundingBoxDescent
+              }
+            };
+            const kept = previous[glyphs.length];
+            glyphs.push({
+              ...base,
+              offset: kept && kept.char === ch ? kept.offset : { x: 0, y: 0 },
+              velocity: { x: 0, y: 0 },
+              outline: 0,
+              fill: sprite(base, false),
+              dashes: sprite(base, true)
+            });
+          }
+          off += len;
+        }
+      }
+
+      // group glyphs into lines (by baseline)
+      lines = [];
+      glyphs.forEach((g, i) => {
+        let L = lines.find(l => Math.abs(l.baseline - g.baseline) < size * 0.3);
+        if (!L) { L = { baseline: g.baseline, idx: [], left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity }; lines.push(L); }
+        L.idx.push(i);
+        g.line = L;
+        L.left = Math.min(L.left, g.box.x1);
+        L.right = Math.max(L.right, g.box.x2);
+        L.top = Math.min(L.top, g.box.y1);
+        L.bottom = Math.max(L.bottom, g.box.y2);
+      });
+      lines.sort((a, b) => a.baseline - b.baseline);
+      view = glyphs.length ? {
+        left: Math.min(...lines.map(l => l.left)),
+        right: Math.max(...lines.map(l => l.right)),
+        top: Math.min(...lines.map(l => l.top)),
+        bottom: Math.max(...lines.map(l => l.bottom))
+      } : null;
+      dragging = -1;
+      frame.index = -1;
+    };
+
+    // Strict hit test: the pointer must be ON a letter — inside its own
+    // column (ink box ±2px) and within its line's height. No snapping to
+    // the nearest letter, so moving the cursor near the name does nothing.
+    const glyphAt = (x, y) => {
+      let best = -1, bestCenter = Infinity;
+      glyphs.forEach((g, i) => {
+        const x1 = g.box.x1 + g.offset.x - 2;
+        const x2 = g.box.x2 + g.offset.x + 2;
+        const y1 = Math.min(g.line.top, g.box.y1) + g.offset.y - 4;
+        const y2 = Math.max(g.line.bottom, g.box.y2) + g.offset.y + 4;
+        if (x < x1 || x > x2 || y < y1 || y > y2) return;
+        const c = Math.abs(x - (x1 + x2) / 2);   // tight kerning → pick the closer centre
+        if (c < bestCenter) { bestCenter = c; best = i; }
+      });
+      return best;
+    };
+
+    // idle sweep path: line 1 left→right, line 2 right→left (boustrophedon), ping-pong
+    const sweepPoint = () => {
+      const u = 0.5 - 0.5 * Math.cos(clock * 0.45);
+      const total = lines.reduce((a, L) => a + (L.right - L.left), 0) || 1;
+      let pos = u * total;
+      for (let k = 0; k < lines.length; k++) {
+        const L = lines[k];
+        const w = Math.max(1, L.right - L.left);
+        if (pos <= w || k === lines.length - 1) {
+          const t = Math.min(1, Math.max(0, pos / w));
+          const x = k % 2 === 0 ? L.left + w * t : L.right - w * t;
+          const y = L.top + (L.bottom - L.top) * (0.45 + 0.1 * Math.sin(clock * 0.8));
+          return [x, y];
+        }
+        pos -= w;
+      }
+      return [lens.x, lens.y];
+    };
+
+    const falloff = (target, cx, cy, radius, strength, softness) => {
+      const inner = Math.min(1, Math.max(0, 1 - softness));
+      const gradient = target.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      gradient.addColorStop(0, `rgba(0, 0, 0, ${strength})`);
+      if (inner > 0.995) {
+        gradient.addColorStop(0.995, `rgba(0, 0, 0, ${strength})`);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        return gradient;
+      }
+      for (let i = 0; i <= FALLOFF_STEPS; i++) {
+        const t = i / FALLOFF_STEPS;
+        const eased = t * t * (3 - 2 * t);
+        gradient.addColorStop(inner + (1 - inner) * t, `rgba(0, 0, 0, ${strength * (1 - eased)})`);
+      }
+      return gradient;
+    };
+
+    const blit = (target, art, dx, dy, originX, originY) => {
+      target.drawImage(art.image, Math.round((art.left + dx) * dpr - originX), Math.round((art.top + dy) * dpr - originY));
+    };
+
+    const drawReveal = () => {
+      const radius = S.reach * dpr;
+      const cx = lens.x * dpr;
+      const cy = lens.y * dpr;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = falloff(ctx, cx, cy, radius, presence, S.softness);
+      ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+      ctx.globalCompositeOperation = 'source-over';
+      const x0 = Math.max(0, Math.floor(cx - radius));
+      const y0 = Math.max(0, Math.floor(cy - radius));
+      const x1 = Math.min(canvas.width, Math.ceil(cx + radius));
+      const y1 = Math.min(canvas.height, Math.ceil(cy + radius));
+      if (x1 <= x0 || y1 <= y0) return;
+      const w = x1 - x0, h = y1 - y0;
+      if (scratch.width < w || scratch.height < h) {
+        scratch.width = Math.max(scratch.width, w);
+        scratch.height = Math.max(scratch.height, h);
+      }
+      scratchCtx.setTransform(1, 0, 0, 1, 0, 0);
+      scratchCtx.globalCompositeOperation = 'source-over';
+      scratchCtx.clearRect(0, 0, w, h);
+      for (const glyph of glyphs) blit(scratchCtx, glyph.dashes, glyph.offset.x, glyph.offset.y, x0, y0);
+      scratchCtx.globalCompositeOperation = 'destination-in';
+      scratchCtx.fillStyle = falloff(scratchCtx, cx - x0, cy - y0, radius, 1, S.softness);
+      scratchCtx.fillRect(0, 0, w, h);
+      scratchCtx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = presence;
+      ctx.drawImage(scratch, 0, 0, w, h, x0, y0, w, h);
+      ctx.globalAlpha = 1;
+    };
+
+    const crisp = value => (Math.round(value * dpr) + 0.5) / dpr;
+
+    const perimeterPoint = (distance, w, h) => {
+      let d = ((distance % (2 * (w + h))) + 2 * (w + h)) % (2 * (w + h));
+      if (d < w) return [frame.x1 + d, frame.y1, 0, -1];
+      d -= w;
+      if (d < h) return [frame.x2, frame.y1 + d, 1, 0];
+      d -= h;
+      if (d < w) return [frame.x2 - d, frame.y2, 0, 1];
+      d -= w;
+      return [frame.x1, frame.y2 - d, -1, 0];
+    };
+
+    const drawSpecks = a => {
+      const w = frame.x2 - frame.x1;
+      const h = frame.y2 - frame.y1;
+      if (w < 2 || h < 2) return;
+      const perimeter = 2 * (w + h);
+      const seed = frame.index + 1;
+      const grid = 3;
+      for (let k = 0; k < S.specks; k++) {
+        const period = 0.5 + noise(seed, k, 11) * 1.2;
+        const t = pulse / period + noise(seed, k, 17);
+        const cycle = Math.floor(t);
+        const life = t - cycle;
+        if (life > 0.7) continue;
+        const [px, py, nx, ny] = perimeterPoint(noise(seed, k, cycle) * perimeter, w, h);
+        const pick = noise(seed, k, cycle, 2);
+        const size = pick < 0.46 ? 2 : pick < 0.7 ? 3 : pick < 0.84 ? 5 : pick < 0.94 ? 8 : 11;
+        const large = size >= 8;
+        const out = (large ? 9 : 4) + Math.floor(noise(seed, k, cycle, 1) * 5) * grid;
+        const x = frame.x1 + Math.round((px + nx * out - frame.x1) / grid) * grid;
+        const y = frame.y1 + Math.round((py + ny * out - frame.y1) / grid) * grid;
+        const tone = noise(seed, k, cycle, 3);
+        const blink = life < 0.06 || (life > 0.32 && life < 0.36) ? 0.35 : 1;
+        const alpha = a * (large ? 0.3 + 0.4 * tone : 0.3 + 0.6 * tone) * blink;
+        const left = Math.round(x - size / 2);
+        const top = Math.round(y - size / 2);
+        if (tone < 0.26 || (large && tone < 0.78)) {
+          ctx.strokeStyle = rgba(S.accentColor, alpha);
+          ctx.strokeRect(left + 0.5, top + 0.5, size, size);
+          if (large && tone > 0.5) {
+            ctx.fillStyle = rgba(S.accentColor, alpha);
+            ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+          }
+        } else {
+          ctx.fillStyle = rgba(S.accentColor, alpha);
+          ctx.fillRect(left, top, size, size);
+        }
+      }
+      for (let j = 0; j < 2; j++) {
+        const head = (pulse * 0.42 * S.speed + j * 0.5) * perimeter;
+        for (let i = 0; i < 4; i++) {
+          const [x, y] = perimeterPoint(head - i * 6, w, h);
+          const size = i === 0 ? 3 : 2;
+          ctx.fillStyle = rgba(S.accentColor, a * [0.95, 0.55, 0.32, 0.16][i]);
+          ctx.fillRect(Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+        }
+      }
+    };
+
+    const drawFrame = () => {
+      const glyph = glyphs[frame.index];
+      if (!glyph || frame.alpha < 0.01) return;
+      const a = frame.alpha;
+      const x1 = crisp(frame.x1), y1 = crisp(frame.y1), x2 = crisp(frame.x2), y2 = crisp(frame.y2);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const moved = Math.hypot(glyph.offset.x, glyph.offset.y);
+      if (moved > 1) {
+        const hx = (glyph.box.x1 + glyph.box.x2) / 2;
+        const hy = (glyph.box.y1 + glyph.box.y2) / 2;
+        ctx.beginPath();
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(hx + glyph.offset.x, hy + glyph.offset.y);
+        ctx.setLineDash([3, 4]);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = rgba(S.accentColor, 0.45 * a);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.rect(Math.round(hx) - 2, Math.round(hy) - 2, 4, 4);
+        ctx.fillStyle = rgba(S.accentColor, 0.7 * a);
+        ctx.fill();
+      }
+
+      ctx.beginPath();
+      ctx.rect(x1, y1, x2 - x1, y2 - y1);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = rgba(S.accentColor, 0.5 * a);
+      ctx.stroke();
+
+      ctx.beginPath();
+      for (const [cx, cy] of [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]) {
+        ctx.rect(Math.round(cx) - 2, Math.round(cy) - 2, 5, 5);
+      }
+      ctx.fillStyle = rgba(S.accentColor, 0.95 * a);
+      ctx.fill();
+
+      if (S.specks > 0) { ctx.lineWidth = 1; drawSpecks(a); }
+
+      if (!S.labels) return;
+      ctx.font = LABEL_FONT;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillStyle = rgba(S.accentColor, 0.62 * a);
+      const label = moved > 1
+        ? `${signed(Math.round(glyph.offset.x))}, ${signed(Math.round(-glyph.offset.y))}`
+        : `${glyph.char}  ${Math.round(glyph.box.x2 - glyph.box.x1)} × ${Math.round(glyph.box.y2 - glyph.box.y1)}`;
+      ctx.fillText(label, Math.round(frame.x1), Math.round(frame.y1) - 7);
+    };
+
+    const tick = now => {
+      raf = 0;
+      const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+      last = now;
+      if (dirty) measure();
+      if (!view) return;
+
+      const sweeping = S.sweep && !reducedMotion && !pointer.inside && dragging < 0;
+      if (sweeping) clock += dt * S.speed;
+      pulse += dt;
+      // the letter directly under the pointer (strict) — this alone drives the effect
+      const hovered = pointer.inside && dragging < 0 ? glyphAt(pointer.x, pointer.y) : -1;
+      let targetX = pointer.x, targetY = pointer.y;
+      if (sweeping) [targetX, targetY] = sweepPoint();
+      const active = hovered >= 0 || sweeping || dragging >= 0;
+      if (active && !placed) { lens.x = targetX; lens.y = targetY; }
+      if (active) {
+        // hovering → no lag, the frame sits on the letter you're on
+        const lag = pointer.inside ? 0.0001 : 0.22;
+        lens.x = approach(lens.x, targetX, dt, lag);
+        lens.y = approach(lens.y, targetY, dt, lag);
+      }
+      placed = active;
+      presence = approach(presence, S.reveal === 'area' && active && dragging < 0 ? 1 : 0, dt, 0.16);
+
+      let moving = false;
+      glyphs.forEach((glyph, i) => {
+        if (i === dragging) {
+          glyph.offset.x = approach(glyph.offset.x, pointer.x - grab.x, dt, 0.03);
+          glyph.offset.y = approach(glyph.offset.y, pointer.y - grab.y, dt, 0.03);
+          glyph.velocity.x = 0;
+          glyph.velocity.y = 0;
+          moving = true;
+          return;
+        }
+        const { offset, velocity } = glyph;
+        if (Math.abs(offset.x) < 0.05 && Math.abs(offset.y) < 0.05 && Math.hypot(velocity.x, velocity.y) < 0.5) {
+          offset.x = 0; offset.y = 0; velocity.x = 0; velocity.y = 0;
+          return;
+        }
+        velocity.x += (-SPRING * offset.x - DAMPING * velocity.x) * dt;
+        velocity.y += (-SPRING * offset.y - DAMPING * velocity.y) * dt;
+        offset.x += velocity.x * dt;
+        offset.y += velocity.y * dt;
+        moving = true;
+      });
+
+      const focus = dragging >= 0 ? dragging : hovered >= 0 ? hovered : sweeping ? glyphAt(lens.x, lens.y) : -1;
+      if (focus >= 0 && S.selection) {
+        const glyph = glyphs[focus];
+        const bx1 = glyph.box.x1 + glyph.offset.x - 6;
+        const by1 = glyph.box.y1 + glyph.offset.y - 6;
+        const bx2 = glyph.box.x2 + glyph.offset.x + 6;
+        const by2 = glyph.box.y2 + glyph.offset.y + 6;
+        if (frame.index < 0 || frame.alpha < 0.02) {
+          frame.x1 = bx1; frame.y1 = by1; frame.x2 = bx2; frame.y2 = by2;
+        }
+        const glide = focus === dragging ? 0.02 : 0.08;
+        frame.x1 = approach(frame.x1, bx1, dt, glide);
+        frame.y1 = approach(frame.y1, by1, dt, glide);
+        frame.x2 = approach(frame.x2, bx2, dt, glide);
+        frame.y2 = approach(frame.y2, by2, dt, glide);
+        frame.index = focus;
+      }
+      frame.alpha = approach(frame.alpha, focus >= 0 && S.selection ? 1 : 0, dt, 0.1);
+
+      glyphs.forEach((glyph, i) => {
+        const target = S.reveal === 'letter' && i === focus && i !== dragging ? 1 : 0;
+        glyph.outline = approach(glyph.outline, target, dt, 0.09);
+        if (Math.abs(glyph.outline - target) > 0.002) moving = true;
+        else glyph.outline = target;
+      });
+
+      // the site uses a custom cursor → grow its ring instead of setting cursor:grab
+      const wantHov = S.draggable && (dragging >= 0 || (focus >= 0 && pointer.inside));
+      if (ring && wantHov !== ringHov) { ring.classList.toggle('hov', wantHov); ringHov = wantHov; }
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const glyph of glyphs) {
+        const moved = Math.hypot(glyph.offset.x, glyph.offset.y);
+        if (moved > 1) {
+          ctx.globalAlpha = Math.min(1, moved / 24) * 0.55;
+          blit(ctx, glyph.dashes, 0, 0, 0, 0);
+          ctx.globalAlpha = 1;
+        }
+      }
+      for (const glyph of glyphs) {
+        if (glyph.outline < 0.999) {
+          ctx.globalAlpha = 1 - glyph.outline;
+          blit(ctx, glyph.fill, glyph.offset.x, glyph.offset.y, 0, 0);
+        }
+        if (glyph.outline > 0.001) {
+          ctx.globalAlpha = glyph.outline;
+          blit(ctx, glyph.dashes, glyph.offset.x, glyph.offset.y, 0, 0);
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (presence > 0.001) drawReveal();
+      drawFrame();
+
+      // first real frame on screen → hide the DOM text underneath (crossfade)
+      if (!h1.classList.contains('tt-on') && glyphs.length) h1.classList.add('tt-on');
+
+      const settling = moving ||
+        Math.abs(presence - (S.reveal === 'area' && active && dragging < 0 ? 1 : 0)) > 0.002 ||
+        (frame.alpha > 0.01 && frame.alpha < 0.99);
+      if ((active || settling) && visible) raf = requestAnimationFrame(tick);
+    };
+
+    const wake = () => {
+      if (raf || !visible) return;
+      last = performance.now();
+      raf = requestAnimationFrame(tick);
+    };
+
+    // ---- pointer ----
+    const locate = e => {
+      const r = h1.getBoundingClientRect();
+      const sc = h1Scale(r);
+      pointer.x = (e.clientX - r.left) / sc + PAD;
+      pointer.y = (e.clientY - r.top) / sc + PAD;
+    };
+    const onMove = e => {
+      locate(e);
+      pointer.inside = true;
+      // only spin up the loop if a letter is under the pointer (or the frame still has to fade out)
+      if (dragging >= 0 || frame.alpha > 0.01 || (glyphs.length && glyphAt(pointer.x, pointer.y) >= 0)) wake();
+    };
+    const onLeave = () => {
+      if (dragging >= 0) return;
+      pointer.inside = false;
+      if (ring && ringHov) { ring.classList.remove('hov'); ringHov = false; }
+      wake();
+    };
+    const onDown = e => {
+      locate(e);
+      pointer.inside = true;
+      if (S.draggable && (e.pointerType !== 'mouse' || e.button === 0)) {
+        const index = glyphAt(pointer.x, pointer.y);
+        if (index >= 0) {
+          dragging = index;
+          grab.x = pointer.x - glyphs[index].offset.x;
+          grab.y = pointer.y - glyphs[index].offset.y;
+          h1.setPointerCapture && h1.setPointerCapture(e.pointerId);
+        }
+      }
+      wake();
+    };
+    const onUp = e => {
+      if (dragging >= 0) {
+        dragging = -1;
+        h1.releasePointerCapture && h1.releasePointerCapture(e.pointerId);
+        const r = h1.getBoundingClientRect();
+        pointer.inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+      }
+      wake();
+    };
+    h1.addEventListener('pointermove', onMove, { passive: true });
+    h1.addEventListener('pointerenter', onMove, { passive: true });
+    h1.addEventListener('pointerdown', onDown, { passive: true });
+    h1.addEventListener('pointerup', onUp, { passive: true });
+    h1.addEventListener('pointercancel', onUp, { passive: true });
+    h1.addEventListener('pointerleave', onLeave, { passive: true });
+
+    // ---- re-layout triggers ----
+    const relayout = () => { dirty = true; wake(); };
+    new ResizeObserver(relayout).observe(h1);
+    window.addEventListener('resize', relayout);
+    if (document.fonts) {
+      document.fonts.ready.then(relayout, relayout);
+      document.fonts.load('600 64px "Inter Tight"', 'Ondřej Pavlis.').then(relayout, relayout);
+    }
+
+    // only animate while the home page is on screen
+    window.__bindBg(['home'],
+      () => { visible = true; dirty = true; wake(); },
+      () => { visible = false; }
+    );
+
+    // DevTools: __techText.settings.specks = 30, __techText.state()
+    window.__techText = {
+      settings: S,
+      state: () => ({ pointer: { ...pointer }, lens: { ...lens }, frameIndex: frame.index, frameAlpha: +frame.alpha.toFixed(2), raf: !!raf, visible, glyphs: glyphs.length }),
+      relayout
+    };
+  })();
+</script>
+
+<!-- ============================================================
+     TILTCARD — vanilla port of unlumen-ui <TiltCard />
+     (Tilt + ClippedCircle primitives) for the Skills cards.
+     ============================================================ -->
+<script>
+  (function () {
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ROTATION = 11;                      // TiltCard passes rotationFactor={11}
+    const K = 100, C = 10, M = 1;             // motion's default useSpring(): stiffness 100, damping 10, mass 1
+
+    document.querySelectorAll('.tilt-card').forEach(card => {
+      // ---- ClippedCircle: circle scales in from the cursor and follows it ----
+      const circle = card.querySelector('.tc-circle');
+      const place = e => {
+        const r = card.getBoundingClientRect();
+        circle.style.left = ((e.clientX - r.left) / r.width) * 100 + '%';
+        circle.style.top = ((e.clientY - r.top) / r.height) * 100 + '%';
+      };
+      if (circle) {
+        card.addEventListener('mouseenter', e => { place(e); circle.classList.add('on'); });
+        card.addEventListener('mousemove', place);
+        card.addEventListener('mouseleave', () => circle.classList.remove('on'));
+      }
+      if (REDUCED) return;
+
+      // ---- Tilt: spring-animated rotateX / rotateY toward the cursor ----
+      const st = { x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0 };
+      let raf = 0, lastT = 0;
+      const frame = now => {
+        let rem = Math.min(0.064, (now - lastT) / 1000);
+        lastT = now;
+        while (rem > 0) {                       // fixed sub-steps → stable spring at any fps
+          const h = Math.min(rem, 1 / 240);
+          rem -= h;
+          st.vx += ((-K * (st.x - st.tx) - C * st.vx) / M) * h;
+          st.vy += ((-K * (st.y - st.ty) - C * st.vy) / M) * h;
+          st.x += st.vx * h;
+          st.y += st.vy * h;
+        }
+        // useTransform: y [-0.5,0.5] → rotateX [-11, 11]; x [-0.5,0.5] → rotateY [11, -11]
+        const rx = st.y * 2 * ROTATION;
+        const ry = -st.x * 2 * ROTATION;
+        card.style.transform = `perspective(1000px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;
+        const settled = Math.abs(st.x - st.tx) < 1e-4 && Math.abs(st.y - st.ty) < 1e-4 &&
+                        Math.abs(st.vx) < 1e-3 && Math.abs(st.vy) < 1e-3;
+        if (settled) {
+          if (st.tx === 0 && st.ty === 0) card.style.transform = '';
+          raf = 0;
+          return;
+        }
+        raf = requestAnimationFrame(frame);
+      };
+      const kick = () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } };
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        st.tx = (e.clientX - r.left) / r.width - 0.5;
+        st.ty = (e.clientY - r.top) / r.height - 0.5;
+        kick();
+      });
+      card.addEventListener('mouseleave', () => { st.tx = 0; st.ty = 0; kick(); });
+    });
+  })();
+</script>
+
+<!-- ============================================================
+     BACKGROUND 1/3 — LineWaves  (home)
+     Vanilla-JS port of the React Bits <LineWaves /> component.
+     WebGL via ogl, loaded as ESM from jsDelivr.
+     ============================================================ -->
+<script type="module">
+  import { Renderer, Program, Mesh, Triangle } from 'https://cdn.jsdelivr.net/npm/ogl@1/+esm';
+
+  const OPTS = {
+    speed: 0.2,
+    innerLineCount: 32.0,
+    outerLineCount: 36.0,
+    warpIntensity: 1.0,
+    rotation: -45,
+    edgeFadeWidth: 0.0,
+    colorCycleSpeed: 1.0,
+    brightness: 0.17,          // a touch under 0.2 → darker, text stays readable
+    color1: '#A855F7',
+    color2: '#7C3AED',
+    color3: '#A855F7',
+    enableMouseInteraction: true,
+    mouseInfluence: 2.0,
+    lightMode: false
+  };
+
+  function hexToVec3(hex) {
+    const h = hex.replace('#', '');
+    return [
+      parseInt(h.slice(0, 2), 16) / 255,
+      parseInt(h.slice(2, 4), 16) / 255,
+      parseInt(h.slice(4, 6), 16) / 255
+    ];
+  }
+
+  const vertexShader = `
+attribute vec2 uv;
+attribute vec2 position;
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 0, 1);
+}
+`;
+
+  const fragmentShader = `
+precision highp float;
+
+uniform float uTime;
+uniform vec3 uResolution;
+uniform float uSpeed;
+uniform float uInnerLines;
+uniform float uOuterLines;
+uniform float uWarpIntensity;
+uniform float uRotation;
+uniform float uEdgeFadeWidth;
+uniform float uColorCycleSpeed;
+uniform float uBrightness;
+uniform vec3 uColor1;
+uniform vec3 uColor2;
+uniform vec3 uColor3;
+uniform vec2 uMouse;
+uniform float uMouseInfluence;
+uniform bool uEnableMouse;
+uniform float uLightMode;
+
+#define HALF_PI 1.5707963
+
+float hashF(float n) {
+  return fract(sin(n * 127.1) * 43758.5453123);
+}
+
+float smoothNoise(float x) {
+  float i = floor(x);
+  float f = fract(x);
+  float u = f * f * (3.0 - 2.0 * f);
+  return mix(hashF(i), hashF(i + 1.0), u);
+}
+
+float displaceA(float coord, float t) {
+  float result = sin(coord * 2.123) * 0.2;
+  result += sin(coord * 3.234 + t * 4.345) * 0.1;
+  result += sin(coord * 0.589 + t * 0.934) * 0.5;
+  return result;
+}
+
+float displaceB(float coord, float t) {
+  float result = sin(coord * 1.345) * 0.3;
+  result += sin(coord * 2.734 + t * 3.345) * 0.2;
+  result += sin(coord * 0.189 + t * 0.934) * 0.3;
+  return result;
+}
+
+vec2 rotate2D(vec2 p, float angle) {
+  float c = cos(angle);
+  float s = sin(angle);
+  return vec2(p.x * c - p.y * s, p.x * s + p.y * c);
+}
+
+void main() {
+  vec2 coords = gl_FragCoord.xy / uResolution.xy;
+  coords = coords * 2.0 - 1.0;
+  coords = rotate2D(coords, uRotation);
+
+  float halfT = uTime * uSpeed * 0.5;
+  float fullT = uTime * uSpeed;
+
+  float mouseWarp = 0.0;
+  if (uEnableMouse) {
+    vec2 mPos = rotate2D(uMouse * 2.0 - 1.0, uRotation);
+    float mDist = length(coords - mPos);
+    mouseWarp = uMouseInfluence * exp(-mDist * mDist * 4.0);
+  }
+
+  float warpAx = coords.x + displaceA(coords.y, halfT) * uWarpIntensity + mouseWarp;
+  float warpAy = coords.y - displaceA(coords.x * cos(fullT) * 1.235, halfT) * uWarpIntensity;
+  float warpBx = coords.x + displaceB(coords.y, halfT) * uWarpIntensity + mouseWarp;
+  float warpBy = coords.y - displaceB(coords.x * sin(fullT) * 1.235, halfT) * uWarpIntensity;
+
+  vec2 fieldA = vec2(warpAx, warpAy);
+  vec2 fieldB = vec2(warpBx, warpBy);
+  vec2 blended = mix(fieldA, fieldB, mix(fieldA, fieldB, 0.5));
+
+  float fadeTop = smoothstep(uEdgeFadeWidth, uEdgeFadeWidth + 0.4, blended.y);
+  float fadeBottom = smoothstep(-uEdgeFadeWidth, -(uEdgeFadeWidth + 0.4), blended.y);
+  float vMask = 1.0 - max(fadeTop, fadeBottom);
+
+  float tileCount = mix(uOuterLines, uInnerLines, vMask);
+  float scaledY = blended.y * tileCount;
+  float nY = smoothNoise(abs(scaledY));
+
+  float ridge = pow(
+    step(abs(nY - blended.x) * 2.0, HALF_PI) * cos(2.0 * (nY - blended.x)),
+    5.0
+  );
+
+  float lines = 0.0;
+  for (float i = 1.0; i < 3.0; i += 1.0) {
+    lines += pow(max(fract(scaledY), fract(-scaledY)), i * 2.0);
+  }
+
+  float pattern = vMask * lines;
+
+  float cycleT = fullT * uColorCycleSpeed;
+  float rChannel = (pattern + lines * ridge) * (cos(blended.y + cycleT * 0.234) * 0.5 + 1.0);
+  float gChannel = (pattern + vMask * ridge) * (sin(blended.x + cycleT * 1.745) * 0.5 + 1.0);
+  float bChannel = (pattern + lines * ridge) * (cos(blended.x + cycleT * 0.534) * 0.5 + 1.0);
+
+  vec3 col = (rChannel * uColor1 + gChannel * uColor2 + bChannel * uColor3) * uBrightness;
+  float alpha = clamp(length(col), 0.0, 1.0);
+
+  if (uLightMode > 0.5) {
+    vec3 weights = pow(max(vec3(rChannel, gChannel, bChannel), vec3(0.0)), vec3(3.0));
+    float weightSum = max(weights.r + weights.g + weights.b, 0.0001);
+    vec3 chroma = (weights.r * uColor1 + weights.g * uColor2 + weights.b * uColor3) / weightSum;
+    float neutral = min(chroma.r, min(chroma.g, chroma.b));
+    chroma = max(chroma - vec3(neutral * 0.92), vec3(0.0));
+    float peak = max(chroma.r, max(chroma.g, chroma.b));
+    chroma = pow(clamp(chroma / max(peak, 0.0001), 0.0, 1.0), vec3(1.08));
+    float ink = clamp(max(rChannel, max(gChannel, bChannel)) * uBrightness * 1.15, 0.0, 0.92);
+    gl_FragColor = vec4(mix(vec3(1.0), chroma, ink), 1.0);
+  } else {
+    gl_FragColor = vec4(col, alpha);
+  }
+}
+`;
+
+  const container = document.getElementById('bg-home');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (container && !reduced) {
+    const o = OPTS;
+    let created = false, running = false, scheduled = false;
+    let renderer, gl, program, mesh;
+    const currentMouse = [0.5, 0.5];
+    let targetMouse = [0.5, 0.5];
+
+    function resize() {
+      renderer.setSize(container.offsetWidth, container.offsetHeight);
+      if (program) {
+        program.uniforms.uResolution.value = [gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height];
+      }
+    }
+
+    function create() {
+      created = true;
+      renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+      gl = renderer.gl;
+      gl.clearColor(0, 0, 0, 0);
+      resize();
+
+      const geometry = new Triangle(gl);
+      program = new Program(gl, {
+        vertex: vertexShader,
+        fragment: fragmentShader,
+        uniforms: {
+          uTime: { value: 0 },
+          uResolution: { value: [gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height] },
+          uSpeed: { value: o.speed },
+          uInnerLines: { value: o.innerLineCount },
+          uOuterLines: { value: o.outerLineCount },
+          uWarpIntensity: { value: o.warpIntensity },
+          uRotation: { value: (o.rotation * Math.PI) / 180 },
+          uEdgeFadeWidth: { value: o.edgeFadeWidth },
+          uColorCycleSpeed: { value: o.colorCycleSpeed },
+          uBrightness: { value: o.brightness },
+          uColor1: { value: hexToVec3(o.color1) },
+          uColor2: { value: hexToVec3(o.color2) },
+          uColor3: { value: hexToVec3(o.color3) },
+          uMouse: { value: new Float32Array([0.5, 0.5]) },
+          uMouseInfluence: { value: o.mouseInfluence },
+          uEnableMouse: { value: o.enableMouseInteraction },
+          uLightMode: { value: o.lightMode ? 1 : 0 }
+        }
+      });
+      mesh = new Mesh(gl, { geometry, program });
+      container.appendChild(gl.canvas);
+      window.addEventListener('resize', resize);
+
+      // bg layer is pointer-events:none → listen on document, map to canvas coords
+      if (o.enableMouseInteraction) {
+        document.addEventListener('mousemove', (e) => {
+          const r = gl.canvas.getBoundingClientRect();
+          targetMouse = [(e.clientX - r.left) / r.width, 1.0 - (e.clientY - r.top) / r.height];
+        }, { passive: true });
+        document.addEventListener('mouseleave', () => { targetMouse = [0.5, 0.5]; });
+      }
+      window.__lineWaves = program;
+    }
+
+    function loop(time) {
+      if (!running) { scheduled = false; return; }
+      requestAnimationFrame(loop);
+      program.uniforms.uTime.value = time * 0.001;
+      if (o.enableMouseInteraction) {
+        currentMouse[0] += 0.05 * (targetMouse[0] - currentMouse[0]);
+        currentMouse[1] += 0.05 * (targetMouse[1] - currentMouse[1]);
+        program.uniforms.uMouse.value[0] = currentMouse[0];
+        program.uniforms.uMouse.value[1] = currentMouse[1];
+      }
+      renderer.render({ scene: mesh });
+      if (!container.classList.contains('ready')) {
+        requestAnimationFrame(() => container.classList.add('ready'));
+      }
+    }
+
+    window.__bindBg(['home'],
+      () => { if (!created) create(); running = true; if (!scheduled) { scheduled = true; requestAnimationFrame(loop); } },
+      () => { running = false; }
+    );
+  }
+</script>
+
+<!-- ============================================================
+     BACKGROUND 2/3 — ColorBends  (work)
+     Vanilla-JS port of the React Bits <ColorBends /> component (three.js).
+     ============================================================ -->
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+
+  const OPTS = {
+    colors: ['#ff5c7a', '#8a5cff', '#00ffd1'],
+    rotation: 90,
+    autoRotate: 0,
+    speed: 0.2,
+    scale: 1,
+    frequency: 1,
+    warpStrength: 1,
+    mouseInfluence: 1,
+    parallax: 0.5,
+    noise: 0.15,
+    iterations: 1,
+    intensity: 1.2,      // original 1.5 — slightly tamed so the project rows stay readable
+    bandWidth: 6,
+    transparent: true
+  };
+
+  const MAX_COLORS = 8;
+
+  const frag = `
+#define MAX_COLORS ${MAX_COLORS}
+uniform vec2 uCanvas;
+uniform float uTime;
+uniform float uSpeed;
+uniform vec2 uRot;
+uniform int uColorCount;
+uniform vec3 uColors[MAX_COLORS];
+uniform int uTransparent;
+uniform float uScale;
+uniform float uFrequency;
+uniform float uWarpStrength;
+uniform vec2 uPointer;
+uniform float uMouseInfluence;
+uniform float uParallax;
+uniform float uNoise;
+uniform int uIterations;
+uniform float uIntensity;
+uniform float uBandWidth;
+varying vec2 vUv;
+
+void main() {
+  float t = uTime * uSpeed;
+  vec2 p = vUv * 2.0 - 1.0;
+  p += uPointer * uParallax * 0.1;
+  vec2 rp = vec2(p.x * uRot.x - p.y * uRot.y, p.x * uRot.y + p.y * uRot.x);
+  vec2 q = vec2(rp.x * (uCanvas.x / uCanvas.y), rp.y);
+  q /= max(uScale, 0.0001);
+  q /= 0.5 + 0.2 * dot(q, q);
+  q += 0.2 * cos(t) - 7.56;
+  vec2 toward = (uPointer - rp);
+  q += toward * uMouseInfluence * 0.2;
+
+  for (int j = 0; j < 5; j++) {
+    if (j >= uIterations - 1) break;
+    vec2 rr = sin(1.5 * (q.yx * uFrequency) + 2.0 * cos(q * uFrequency));
+    q += (rr - q) * 0.15;
+  }
+
+  vec3 col = vec3(0.0);
+  float a = 1.0;
+
+  if (uColorCount > 0) {
+    vec2 s = q;
+    vec3 sumCol = vec3(0.0);
+    float cover = 0.0;
+    for (int i = 0; i < MAX_COLORS; ++i) {
+      if (i >= uColorCount) break;
+      s -= 0.01;
+      vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
+      float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(i)) / 4.0);
+      float kBelow = clamp(uWarpStrength, 0.0, 1.0);
+      float kMix = pow(kBelow, 0.3);
+      float gain = 1.0 + max(uWarpStrength - 1.0, 0.0);
+      vec2 disp = (r - s) * kBelow;
+      vec2 warped = s + disp * gain;
+      float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(i)) / 4.0);
+      float m = mix(m0, m1, kMix);
+      float w = 1.0 - exp(-uBandWidth / exp(uBandWidth * m));
+      sumCol += uColors[i] * w;
+      cover = max(cover, w);
+    }
+    col = clamp(sumCol, 0.0, 1.0);
+    a = uTransparent > 0 ? cover : 1.0;
+  } else {
+    vec2 s = q;
+    for (int k = 0; k < 3; ++k) {
+      s -= 0.01;
+      vec2 r = sin(1.5 * (s.yx * uFrequency) + 2.0 * cos(s * uFrequency));
+      float m0 = length(r + sin(5.0 * r.y * uFrequency - 3.0 * t + float(k)) / 4.0);
+      float kBelow = clamp(uWarpStrength, 0.0, 1.0);
+      float kMix = pow(kBelow, 0.3);
+      float gain = 1.0 + max(uWarpStrength - 1.0, 0.0);
+      vec2 disp = (r - s) * kBelow;
+      vec2 warped = s + disp * gain;
+      float m1 = length(warped + sin(5.0 * warped.y * uFrequency - 3.0 * t + float(k)) / 4.0);
+      float m = mix(m0, m1, kMix);
+      col[k] = 1.0 - exp(-uBandWidth / exp(uBandWidth * m));
+    }
+    a = uTransparent > 0 ? max(max(col.r, col.g), col.b) : 1.0;
+  }
+
+  col *= uIntensity;
+
+  if (uNoise > 0.0001) {
+    float n = fract(sin(dot(gl_FragCoord.xy + vec2(uTime), vec2(12.9898, 78.233))) * 43758.5453123);
+    col += (n - 0.5) * uNoise;
+    col = clamp(col, 0.0, 1.0);
+  }
+
+  vec3 rgb = (uTransparent > 0) ? col * a : col;
+  gl_FragColor = vec4(rgb, a);
+}
+`;
+
+  const vert = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = vec4(position, 1.0);
+}
+`;
+
+  const container = document.getElementById('bg-work');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (container && !reduced) {
+    const o = OPTS;
+    let created = false, running = false, scheduled = false;
+    let renderer, scene, camera, material, t0 = 0, last = 0;
+    const ptrTarget = new THREE.Vector2(0, 0);
+    const ptrCurrent = new THREE.Vector2(0, 0);
+
+    const toVec3 = (hex) => {
+      const h = hex.replace('#', '').trim();
+      const v = h.length === 3
+        ? [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)]
+        : [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+      return new THREE.Vector3(v[0] / 255, v[1] / 255, v[2] / 255);
+    };
+
+    function resize() {
+      const w = container.clientWidth || 1, h = container.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      material.uniforms.uCanvas.value.set(w, h);
+    }
+
+    function create() {
+      created = true;
+      scene = new THREE.Scene();
+      camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+      const uColors = Array.from({ length: MAX_COLORS }, () => new THREE.Vector3(0, 0, 0));
+      const arr = o.colors.filter(Boolean).slice(0, MAX_COLORS).map(toVec3);
+      arr.forEach((v, i) => uColors[i].copy(v));
+
+      material = new THREE.ShaderMaterial({
+        vertexShader: vert,
+        fragmentShader: frag,
+        uniforms: {
+          uCanvas: { value: new THREE.Vector2(1, 1) },
+          uTime: { value: 0 },
+          uSpeed: { value: o.speed },
+          uRot: { value: new THREE.Vector2(1, 0) },
+          uColorCount: { value: arr.length },
+          uColors: { value: uColors },
+          uTransparent: { value: o.transparent ? 1 : 0 },
+          uScale: { value: o.scale },
+          uFrequency: { value: o.frequency },
+          uWarpStrength: { value: o.warpStrength },
+          uPointer: { value: new THREE.Vector2(0, 0) },
+          uMouseInfluence: { value: o.mouseInfluence },
+          uParallax: { value: o.parallax },
+          uNoise: { value: o.noise },
+          uIterations: { value: o.iterations },
+          uIntensity: { value: o.intensity },
+          uBandWidth: { value: o.bandWidth }
+        },
+        premultipliedAlpha: true,
+        transparent: true
+      });
+      scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+
+      renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', alpha: true });
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setClearColor(0x000000, o.transparent ? 0 : 1);
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      container.appendChild(renderer.domElement);
+      resize();
+      window.addEventListener('resize', resize);
+
+      document.addEventListener('pointermove', (e) => {
+        const r = container.getBoundingClientRect();
+        const x = ((e.clientX - r.left) / (r.width || 1)) * 2 - 1;
+        const y = -(((e.clientY - r.top) / (r.height || 1)) * 2 - 1);
+        ptrTarget.set(x, y);
+      }, { passive: true });
+
+      t0 = performance.now(); last = t0;
+      window.__colorBends = material;
+    }
+
+    function loop(now) {
+      if (!running) { scheduled = false; return; }
+      requestAnimationFrame(loop);
+      const dt = Math.min(0.05, (now - last) / 1000); last = now;
+      const elapsed = (now - t0) / 1000;
+      material.uniforms.uTime.value = elapsed;
+
+      const deg = (o.rotation % 360) + o.autoRotate * elapsed;
+      const rad = (deg * Math.PI) / 180;
+      material.uniforms.uRot.value.set(Math.cos(rad), Math.sin(rad));
+
+      ptrCurrent.lerp(ptrTarget, Math.min(1, dt * 8));
+      material.uniforms.uPointer.value.copy(ptrCurrent);
+
+      renderer.render(scene, camera);
+      if (!container.classList.contains('ready')) {
+        requestAnimationFrame(() => container.classList.add('ready'));
+      }
+    }
+
+    window.__bindBg(['work'],
+      () => { if (!created) create(); last = performance.now(); running = true; if (!scheduled) { scheduled = true; requestAnimationFrame(loop); } },
+      () => { running = false; }
+    );
+  }
+</script>
+
+<!-- ============================================================
+     BACKGROUND 3/3 — Beams  (skills · about · contact)
+     Vanilla three.js port of the React Bits <Beams /> component
+     (originally react-three-fiber + drei).
+     ============================================================ -->
+<script type="module">
+  import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+
+  const OPTS = {
+    beamWidth: 2,
+    beamHeight: 15,
+    beamNumber: 12,
+    lightColor: '#A855F7',
+    beamColor: '#000000',
+    backgroundColor: '#0a0a10',   // matches --bg so the layer blends with the page
+    speed: 2,
+    noiseIntensity: 1.75,
+    scale: 0.2,
+    rotation: 0,
+    lightMode: false
+  };
+
+  const noiseGLSL = `
+float random (in vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+}
+float noise (in vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+}
+vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+vec3 fade(vec3 t) {return t*t*t*(t*(t*6.0-15.0)+10.0);}
+float cnoise(vec3 P){
+  vec3 Pi0 = floor(P);
+  vec3 Pi1 = Pi0 + vec3(1.0);
+  Pi0 = mod(Pi0, 289.0);
+  Pi1 = mod(Pi1, 289.0);
+  vec3 Pf0 = fract(P);
+  vec3 Pf1 = Pf0 - vec3(1.0);
+  vec4 ix = vec4(Pi0.x, Pi1.x, Pi0.x, Pi1.x);
+  vec4 iy = vec4(Pi0.yy, Pi1.yy);
+  vec4 iz0 = Pi0.zzzz;
+  vec4 iz1 = Pi1.zzzz;
+  vec4 ixy = permute(permute(ix) + iy);
+  vec4 ixy0 = permute(ixy + iz0);
+  vec4 ixy1 = permute(ixy + iz1);
+  vec4 gx0 = ixy0 / 7.0;
+  vec4 gy0 = fract(floor(gx0) / 7.0) - 0.5;
+  gx0 = fract(gx0);
+  vec4 gz0 = vec4(0.5) - abs(gx0) - abs(gy0);
+  vec4 sz0 = step(gz0, vec4(0.0));
+  gx0 -= sz0 * (step(0.0, gx0) - 0.5);
+  gy0 -= sz0 * (step(0.0, gy0) - 0.5);
+  vec4 gx1 = ixy1 / 7.0;
+  vec4 gy1 = fract(floor(gx1) / 7.0) - 0.5;
+  gx1 = fract(gx1);
+  vec4 gz1 = vec4(0.5) - abs(gx1) - abs(gy1);
+  vec4 sz1 = step(gz1, vec4(0.0));
+  gx1 -= sz1 * (step(0.0, gx1) - 0.5);
+  gy1 -= sz1 * (step(0.0, gy1) - 0.5);
+  vec3 g000 = vec3(gx0.x,gy0.x,gz0.x);
+  vec3 g100 = vec3(gx0.y,gy0.y,gz0.y);
+  vec3 g010 = vec3(gx0.z,gy0.z,gz0.z);
+  vec3 g110 = vec3(gx0.w,gy0.w,gz0.w);
+  vec3 g001 = vec3(gx1.x,gy1.x,gz1.x);
+  vec3 g101 = vec3(gx1.y,gy1.y,gz1.y);
+  vec3 g011 = vec3(gx1.z,gy1.z,gz1.z);
+  vec3 g111 = vec3(gx1.w,gy1.w,gz1.w);
+  vec4 norm0 = taylorInvSqrt(vec4(dot(g000,g000),dot(g010,g010),dot(g100,g100),dot(g110,g110)));
+  g000 *= norm0.x; g010 *= norm0.y; g100 *= norm0.z; g110 *= norm0.w;
+  vec4 norm1 = taylorInvSqrt(vec4(dot(g001,g001),dot(g011,g011),dot(g101,g101),dot(g111,g111)));
+  g001 *= norm1.x; g011 *= norm1.y; g101 *= norm1.z; g111 *= norm1.w;
+  float n000 = dot(g000, Pf0);
+  float n100 = dot(g100, vec3(Pf1.x,Pf0.yz));
+  float n010 = dot(g010, vec3(Pf0.x,Pf1.y,Pf0.z));
+  float n110 = dot(g110, vec3(Pf1.xy,Pf0.z));
+  float n001 = dot(g001, vec3(Pf0.xy,Pf1.z));
+  float n101 = dot(g101, vec3(Pf1.x,Pf0.y,Pf1.z));
+  float n011 = dot(g011, vec3(Pf0.x,Pf1.yz));
+  float n111 = dot(g111, Pf1);
+  vec3 fade_xyz = fade(Pf0);
+  vec4 n_z = mix(vec4(n000,n100,n010,n110),vec4(n001,n101,n011,n111),fade_xyz.z);
+  vec2 n_yz = mix(n_z.xy,n_z.zw,fade_xyz.y);
+  float n_xyz = mix(n_yz.x,n_yz.y,fade_xyz.x);
+  return 2.2 * n_xyz;
+}
+`;
+
+  const hexToNormalizedRGB = (hex) => {
+    const c = hex.replace('#', '');
+    return [parseInt(c.substring(0, 2), 16) / 255, parseInt(c.substring(2, 4), 16) / 255, parseInt(c.substring(4, 6), 16) / 255];
+  };
+
+  // Extends MeshStandardMaterial's shader (ShaderLib.physical) with injected GLSL — same as the React version.
+  function extendMaterial(BaseMaterial, cfg) {
+    const physical = THREE.ShaderLib.physical;
+    const { vertexShader: baseVert, fragmentShader: baseFrag, uniforms: baseUniforms } = physical;
+    const baseDefines = physical.defines ?? {};
+    const uniforms = THREE.UniformsUtils.clone(baseUniforms);
+    const defaults = new BaseMaterial(cfg.material || {});
+
+    if (defaults.color) uniforms.diffuse.value = defaults.color;
+    if ('roughness' in defaults) uniforms.roughness.value = defaults.roughness;
+    if ('metalness' in defaults) uniforms.metalness.value = defaults.metalness;
+    if ('envMap' in defaults) uniforms.envMap.value = defaults.envMap;
+    if ('envMapIntensity' in defaults) uniforms.envMapIntensity.value = defaults.envMapIntensity;
+
+    Object.entries(cfg.uniforms ?? {}).forEach(([key, u]) => {
+      uniforms[key] = u !== null && typeof u === 'object' && 'value' in u ? u : { value: u };
+    });
+
+    let vert = `${cfg.header}\n${cfg.vertexHeader ?? ''}\n${baseVert}`;
+    let fragS = `${cfg.header}\n${cfg.fragmentHeader ?? ''}\n${baseFrag}`;
+    for (const [inc, code] of Object.entries(cfg.vertex ?? {}))   vert  = vert.replace(inc, `${inc}\n${code}`);
+    for (const [inc, code] of Object.entries(cfg.fragment ?? {})) fragS = fragS.replace(inc, `${inc}\n${code}`);
+
+    return new THREE.ShaderMaterial({
+      defines: { ...baseDefines },
+      uniforms,
+      vertexShader: vert,
+      fragmentShader: fragS,
+      lights: true,
+      fog: !!cfg.material?.fog
+    });
+  }
+
+  function createStackedPlanesBufferGeometry(n, width, height, spacing, heightSegments) {
+    const geometry = new THREE.BufferGeometry();
+    const numVertices = n * (heightSegments + 1) * 2;
+    const numFaces = n * heightSegments * 2;
+    const positions = new Float32Array(numVertices * 3);
+    const indices = new Uint32Array(numFaces * 3);
+    const uvs = new Float32Array(numVertices * 2);
+
+    let vertexOffset = 0, indexOffset = 0, uvOffset = 0;
+    const totalWidth = n * width + (n - 1) * spacing;
+    const xOffsetBase = -totalWidth / 2;
+
+    for (let i = 0; i < n; i++) {
+      const xOffset = xOffsetBase + i * (width + spacing);
+      const uvXOffset = Math.random() * 300;
+      const uvYOffset = Math.random() * 300;
+      for (let j = 0; j <= heightSegments; j++) {
+        const y = height * (j / heightSegments - 0.5);
+        positions.set([xOffset, y, 0, xOffset + width, y, 0], vertexOffset * 3);
+        const uvY = j / heightSegments;
+        uvs.set([uvXOffset, uvY + uvYOffset, uvXOffset + 1, uvY + uvYOffset], uvOffset);
+        if (j < heightSegments) {
+          const a = vertexOffset, b = vertexOffset + 1, c = vertexOffset + 2, d = vertexOffset + 3;
+          indices.set([a, b, c, c, b, d], indexOffset);
+          indexOffset += 6;
+        }
+        vertexOffset += 2;
+        uvOffset += 4;
+      }
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  const container = document.getElementById('bg-rest');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (container && !reduced) {
+    const o = OPTS;
+    let created = false, running = false, scheduled = false;
+    let renderer, scene, camera, material, last = 0;
+
+    function resize() {
+      const w = container.clientWidth || 1, h = container.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    function create() {
+      created = true;
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(o.backgroundColor);
+
+      camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000);
+      camera.position.set(0, 0, 20);
+
+      material = extendMaterial(THREE.MeshStandardMaterial, {
+        header: `
+  varying vec3 vEye;
+  varying float vNoise;
+  varying vec2 vUv;
+  varying vec3 vPosition;
+  uniform float time;
+  uniform float uSpeed;
+  uniform float uNoiseIntensity;
+  uniform float uScale;
+  ${noiseGLSL}`,
+        vertexHeader: `
+  float getPos(vec3 pos) {
+    vec3 noisePos = vec3(pos.x * 0., pos.y - uv.y, pos.z + time * uSpeed * 3.) * uScale;
+    return cnoise(noisePos);
+  }
+  vec3 getCurrentPos(vec3 pos) {
+    vec3 newpos = pos;
+    newpos.z += getPos(pos);
+    return newpos;
+  }
+  vec3 getNormal(vec3 pos) {
+    vec3 curpos = getCurrentPos(pos);
+    vec3 nextposX = getCurrentPos(pos + vec3(0.01, 0.0, 0.0));
+    vec3 nextposZ = getCurrentPos(pos + vec3(0.0, -0.01, 0.0));
+    vec3 tangentX = normalize(nextposX - curpos);
+    vec3 tangentZ = normalize(nextposZ - curpos);
+    return normalize(cross(tangentZ, tangentX));
+  }`,
+        fragmentHeader: 'uniform float uLightMode;',
+        vertex: {
+          '#include <begin_vertex>': `transformed.z += getPos(transformed.xyz);`,
+          '#include <beginnormal_vertex>': `objectNormal = getNormal(position.xyz);`
+        },
+        fragment: {
+          '#include <dithering_fragment>': `
+    float randomNoise = noise(gl_FragCoord.xy);
+    gl_FragColor.rgb -= randomNoise / 15. * uNoiseIntensity;
+    if (uLightMode > 0.5) {
+      float energy = max(max(gl_FragColor.r, gl_FragColor.g), gl_FragColor.b);
+      vec3 chroma = clamp(gl_FragColor.rgb / max(energy, 0.0001), 0.0, 1.0);
+      chroma = pow(chroma, vec3(1.2));
+      gl_FragColor.rgb = mix(vec3(1.0), chroma, clamp(energy * 0.98, 0.0, 0.94));
+    }`
+        },
+        material: { fog: false },
+        uniforms: {
+          diffuse: new THREE.Color(...hexToNormalizedRGB(o.beamColor)),
+          time: { value: 0 },
+          roughness: 0.3,
+          metalness: 0.3,
+          uSpeed: { value: o.speed },
+          envMapIntensity: 10,
+          uNoiseIntensity: o.noiseIntensity,
+          uScale: o.scale,
+          uLightMode: o.lightMode ? 1 : 0
+        }
+      });
+
+      const group = new THREE.Group();
+      group.rotation.z = THREE.MathUtils.degToRad(o.rotation);
+      const geometry = createStackedPlanesBufferGeometry(o.beamNumber, o.beamWidth, o.beamHeight, 0, 100);
+      group.add(new THREE.Mesh(geometry, material));
+      const dir = new THREE.DirectionalLight(o.lightColor, 1);
+      dir.position.set(0, 3, 10);
+      group.add(dir);
+      scene.add(group);
+      scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      // match react-three-fiber's defaults so the look is identical
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.domElement.style.width = '100%';
+      renderer.domElement.style.height = '100%';
+      renderer.domElement.style.display = 'block';
+      container.appendChild(renderer.domElement);
+      resize();
+      window.addEventListener('resize', resize);
+      window.__beams = material;
+    }
+
+    function loop(now) {
+      if (!running) { scheduled = false; return; }
+      requestAnimationFrame(loop);
+      const delta = Math.min(0.05, (now - last) / 1000); last = now;
+      material.uniforms.time.value += 0.1 * delta;
+      renderer.render(scene, camera);
+      if (!container.classList.contains('ready')) {
+        requestAnimationFrame(() => container.classList.add('ready'));
+      }
+    }
+
+    window.__bindBg(['skills', 'about', 'contact'],
+      () => { if (!created) create(); last = performance.now(); running = true; if (!scheduled) { scheduled = true; requestAnimationFrame(loop); } },
+      () => { running = false; }
+    );
+  }
 </script>
 
 </body>
