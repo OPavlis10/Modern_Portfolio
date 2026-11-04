@@ -39,4 +39,4 @@ GitHub Pages serves `index.html` from `main`. The `CNAME` file points the custom
 
 ---
 
-Built in 2026.
+Built in 2026. 
