@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ondřej Pavlis — OPavlis10</title>
+<title>Ondřej Pavlis — student developer &amp; cybersecurity enthusiast, Prague</title>
 <meta name="description" content="Ondřej Pavlis (OPavlis10) — Student · Developer · Cybersecurity Enthusiast. Passionate about fitness, technology and pushing boundaries through code." />
 <!-- Share image (Open Graph / Twitter) — the atom, assets/atom/og.jpg, 1200×630 -->
 <meta property="og:type" content="website" />
@@ -20,6 +20,21 @@
 <meta name="twitter:description" content="Ondřej Pavlis (OPavlis10) — Student · Developer · Cybersecurity Enthusiast. Passionate about fitness, technology and pushing boundaries through code." />
 <meta name="twitter:image" content="https://ondrej.pavlis.net/assets/atom/og.jpg" />
 <meta name="twitter:image:alt" content="A glowing violet atom with three orbit rings on a dark background" />
+<link rel="canonical" href="https://ondrej.pavlis.net/" />
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Ondřej Pavlis",
+  "alternateName": "OPavlis10",
+  "url": "https://ondrej.pavlis.net/",
+  "image": "https://ondrej.pavlis.net/assets/atom/og.jpg",
+  "sameAs": ["https://github.com/OPavlis10"]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -38,8 +53,8 @@
     --line:      rgba(168, 85, 247, 0.22);
     --line-soft: rgba(168, 85, 247, 0.13);
     --text:      #ededf2;
-    --text-dim:  #8a8a96;
-    --text-mute: #5a5a64;
+    --text-dim:  #9c9ca8;   /* 7.3:1 on --bg (was #8a8a96) — stays one clear step above mute */
+    --text-mute: #7c7c8a;   /* 4.8:1 on --bg (was #5a5a64, 2.9:1) */
     --accent:    #c8b4ff;
     --accent-2:  #93f9d2;
     --warm:      #ffd6a8;
@@ -50,9 +65,6 @@
     --ease-expo:   cubic-bezier(0.19, 1, 0.22, 1);
     --ease-smooth: cubic-bezier(0.65, 0, 0.35, 1);
     --ease-soft:   cubic-bezier(0.32, 0.72, 0, 1);
-
-    --mx: 50%;
-    --my: 50%;
   }
 
   /* Respect users who don't want motion */
@@ -79,6 +91,13 @@
   }
   ::selection { background: var(--accent); color: #0a0a10; }
   a { color: inherit; text-decoration: none; }
+
+  /* Keyboard focus — one ring everywhere (mouse clicks don't trigger it).
+     The custom cursor only replaces the pointer; it never removes this. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 
   .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
   .serif-i {
@@ -149,6 +168,8 @@
     animation: float-up linear infinite;
     will-change: transform, opacity;
   }
+  html.win-idle .ambient i,
+  html.win-idle .logo-fixed .dot { animation-play-state: paused; }
   @keyframes float-up {
     0%   { transform: translateY(110vh) translateX(0) scale(0.4); opacity: 0; }
     8%   { opacity: 0.7; }
@@ -254,7 +275,8 @@
                 box-shadow 0.6s var(--ease-expo);
     will-change: transform;
   }
-  .menu-btn:hover {
+  .menu-btn:hover,
+  .menu-btn:focus-visible {
     background: rgba(28,28,40,0.85);
     border-color: var(--accent);
     box-shadow: 0 0 0 4px rgba(200,180,255,0.06), 0 8px 24px -10px rgba(200,180,255,0.4);
@@ -433,12 +455,15 @@
     transition: opacity 0.35s var(--ease-out), transform 0.35s var(--ease-out), color 0.35s;
     color: var(--accent);
   }
-  .menu-list a:hover {
+  .menu-list a:hover,
+  .menu-list a:focus-visible {
     color: var(--accent);
     padding-left: 36px;
     letter-spacing: -0.035em;
   }
-  .menu-list a:hover::after { opacity: 1; transform: translateX(0); }
+  .menu-list a:hover::after,
+  .menu-list a:focus-visible::after { opacity: 1; transform: translateX(0); }
+  .menu-list a:focus-visible { outline-offset: -2px; }
   .menu-list a.active { color: var(--text); }
   .menu-list a.active::before {
     content: '';
@@ -1800,7 +1825,7 @@
     height: 10px;
     margin-top: 6px;
     border-radius: 50%;
-    border: 1px solid var(--text-mute);
+    border: 1px solid #5a5a64;   /* decorative ring: keeps the old quiet grey */
     background: var(--bg);
   }
   .edu-step.now .edu-dot {
@@ -2259,7 +2284,7 @@
   Ondřej Pavlis
 </div>
 
-<button class="menu-btn" id="menuBtn" aria-label="Open menu">
+<button class="menu-btn" id="menuBtn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menuOverlay">
   <span class="label"><span class="label-default">Menu</span></span>
   <span class="bars"><i></i><i></i></span>
 </button>
@@ -2274,11 +2299,11 @@
   <div class="menu-content">
     <div class="menu-eyebrow">Navigate</div>
     <ul class="menu-list" id="menuList">
-      <li><a data-page="home"    class="active"><span class="num">01</span>Home</a></li>
-      <li><a data-page="work"><span class="num">02</span>Work</a></li>
-      <li><a data-page="skills"><span class="num">03</span>Skills</a></li>
-      <li><a data-page="about"><span class="num">04</span>About Me</a></li>
-      <li><a data-page="contact"><span class="num">05</span>Contact</a></li>
+      <li><a href="#home" data-page="home"    class="active"><span class="num">01</span>Home</a></li>
+      <li><a href="#work" data-page="work"><span class="num">02</span>Work</a></li>
+      <li><a href="#skills" data-page="skills"><span class="num">03</span>Skills</a></li>
+      <li><a href="#about" data-page="about"><span class="num">04</span>About Me</a></li>
+      <li><a href="#contact" data-page="contact"><span class="num">05</span>Contact</a></li>
     </ul>
     <div class="menu-foot">
       <div class="links">
@@ -3030,25 +3055,20 @@
   let mx = window.innerWidth/2, my = window.innerHeight/2;
   let dx = mx, dy = my;     // smoothed dot
   let rx = mx, ry = my;     // smoothed ring
-  let bgx = mx, bgy = my;   // smoothed background spot
-  let targetScrollY = 0;     // raw scroll target
-  let scrollY = 0;           // smoothed scroll
+  let tickRaf = 0;
 
   document.addEventListener('mousemove', e => {
     mx = e.clientX; my = e.clientY;
+    wakeCursor();
   });
   document.addEventListener('mousedown', () => ring && ring.classList.add('click'));
   document.addEventListener('mouseup',   () => ring && ring.classList.remove('click'));
 
-  // Each .page has its own internal scroll — track whichever one is active
-  document.querySelectorAll('.page').forEach(p => {
-    p.addEventListener('scroll', () => {
-      // clamp so the parallax doesn't drift forever on long pages
-      targetScrollY = Math.min(p.scrollTop, 600);
-    }, { passive: true });
-  });
-
+  // Runs only while the dot / ring are still catching up with the pointer, then
+  // goes idle until the next mousemove — nothing per frame while the mouse rests
+  // (so also nothing in a background window or a hidden tab).
   function tick() {
+    tickRaf = 0;
     // dot — very snappy but still buttery (no hard snap)
     dx += (mx - dx) * 0.42;
     dy += (my - dy) * 0.42;
@@ -3059,24 +3079,48 @@
     ry += (my - ry) * 0.14;
     if (ring) ring.style.transform = `translate3d(${rx - 15}px, ${ry - 15}px, 0)`;
 
-    // background spot/aurora — much smoother trail
-    bgx += (mx - bgx) * 0.055;
-    bgy += (my - bgy) * 0.055;
-    const px = (bgx / window.innerWidth) * 100;
-    const py = (bgy / window.innerHeight) * 100;
-    root.style.setProperty('--mx', px + '%');
-    root.style.setProperty('--my', py + '%');
-
-    // scroll-driven parallax — lerped so it never feels jumpy
-    scrollY += (targetScrollY - scrollY) * 0.08;
-    root.style.setProperty('--scroll-yp', scrollY.toFixed(2) + 'px');
-
-    requestAnimationFrame(tick);
+    if (Math.abs(mx - rx) > 0.05 || Math.abs(my - ry) > 0.05 ||
+        Math.abs(mx - dx) > 0.05 || Math.abs(my - dy) > 0.05) {
+      tickRaf = requestAnimationFrame(tick);
+    }
+  }
+  function wakeCursor() {
+    if (!tickRaf && !PREFERS_REDUCED) tickRaf = requestAnimationFrame(tick);
   }
   if (!PREFERS_REDUCED) tick();
 
-  // Reset parallax when switching pages so a fresh page starts at the top of the bg
-  function resetScrollTarget() { targetScrollY = 0; }
+  // ============================================================
+  // WINDOW ACTIVITY — html.win-idle while the tab is hidden or the window is
+  // in the background (pauses the CSS-only decoration; the WebGL layers and
+  // the atom videos listen for the same events themselves).
+  // ============================================================
+  // "Away" = the window has been without focus for AWAY_MS. A short loss of
+  // focus (address bar, DevTools, a click into another window) pauses nothing.
+  // Never on touch devices: there a visible page is the one in use, and only
+  // the hidden-tab rule applies.
+  const AWAY_MS = 20000;
+  const BLUR_PAUSE = !window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  let winAway = false, awayTimer = null;
+  window.__winAway = () => winAway;
+  function syncWinIdle() {
+    root.classList.toggle('win-idle', document.hidden || winAway);
+  }
+  function setAway(v) {
+    if (winAway === v) return;
+    winAway = v;
+    syncWinIdle();
+    document.dispatchEvent(new CustomEvent('winaway', { detail: v }));
+  }
+  function armAway() {
+    clearTimeout(awayTimer);
+    if (!BLUR_PAUSE) return;
+    awayTimer = setTimeout(() => { if (!document.hasFocus()) setAway(true); }, AWAY_MS);
+  }
+  window.addEventListener('blur', armAway);
+  window.addEventListener('focus', () => { clearTimeout(awayTimer); setAway(false); });
+  document.addEventListener('visibilitychange', syncWinIdle);
+  if (!document.hasFocus()) armAway();
+  syncWinIdle();
 
   document.querySelectorAll('a, button, .prow, .stile, .cert, .channel, .chip, .tilt-card').forEach(el => {
     el.addEventListener('mouseenter', () => ring && ring.classList.add('hov'));
@@ -3192,6 +3236,10 @@
   function toggleMenu(force) {
     const open = force !== undefined ? force : !document.body.classList.contains('menu-open');
     document.body.classList.toggle('menu-open', open);
+    menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    // closing hides the links: hand keyboard focus back to the button
+    if (!open && menuOverlay.contains(document.activeElement)) menuBtn.focus();
   }
   menuBtn.addEventListener('click', () => toggleMenu());
   menuBg.addEventListener('click', () => toggleMenu(false));
@@ -3205,6 +3253,9 @@
   const pages    = document.querySelectorAll('.page');
   const pageStamp = document.getElementById('pageNumStamp');
   const order = ['home','work','skills','about','contact'];
+  const SITE_TITLE = document.title;        // the full title belongs to Home
+  const pageTitles = { work: 'Work', skills: 'Skills', about: 'About', contact: 'Contact' };
+  const titleFor = p => pageTitles[p] ? pageTitles[p] + ' — Ondřej Pavlis' : SITE_TITLE;
 
   // ---- background routing: which WebGL layer is live for which page ----
   function setBgPage(p) {
@@ -3214,63 +3265,82 @@
   }
   // Modules call this to run only while their page is showing.
   // Keeps rendering ~1.2s after leaving so the opacity crossfade stays smooth.
+  // Also paused while the tab is hidden or the window has been in the background
+  // for a while (__winAway; the last frame stays on the canvas), resumed on return.
   window.__bindBg = function (pages, start, stop) {
-    let active = false, stopTimer = null;
+    let active = false, live = false, stopTimer = null, peekTimer = null;
     // not in a hidden tab, and not underneath the opaque INTRO overlay
     const canRun = () => !document.hidden && !window.__introHoldsBg;
+    const PEEK_MS = 1600;      // long enough to create the layer and fade it in (1s)
+    const stopNow = () => { if (live) { live = false; stop(); } };
+    function run() {
+      if (!active || !canRun()) return;
+      clearTimeout(peekTimer);
+      if (!live) { live = true; start(); }
+      // window in the background (opened behind another one, or the page was
+      // switched without focus): draw long enough to show a picture, then freeze
+      if (window.__winAway()) {
+        peekTimer = setTimeout(() => { if (window.__winAway()) stopNow(); }, PEEK_MS);
+      }
+    }
+    function halt() { clearTimeout(peekTimer); stopNow(); }
     function apply(page) {
       const on = pages.includes(page);
-      if (on && !active) { active = true; clearTimeout(stopTimer); if (canRun()) start(); }
-      else if (!on && active) { active = false; stopTimer = setTimeout(stop, 1200); }
+      if (on && !active) { active = true; clearTimeout(stopTimer); run(); }
+      else if (!on && active) { active = false; clearTimeout(peekTimer); stopTimer = setTimeout(stopNow, 1200); }
     }
     document.addEventListener('pagechange', e => apply(e.detail));
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) stop(); else if (active && canRun()) start();
-    });
-    document.addEventListener('introleave', () => { if (active && canRun()) start(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) halt(); else run(); });
+    document.addEventListener('winaway', e => { if (e.detail) halt(); else run(); });
+    document.addEventListener('introleave', run);
     apply(document.body.dataset.page || 'home');
   };
 
-  function go(target, skipHistory) {
-    if (!target) target = 'home';
+  // history: 'skip' (Back / Forward, first load), 'replace' (number keys), default = new entry
+  // the page marked .active in the HTML is the one showing at load
+  let currentTarget = (document.querySelector('.page.active') || pages[0]).getAttribute('data-page');
+  let leaveTimer = 0, enterTimer = 0, foldTimer = 0;
+  function go(target, history_) {
+    if (!order.includes(target)) target = 'home';
+    toggleMenu(false);
     setBgPage(target);
-    const current = document.querySelector('.page.active');
-    if (current && current.getAttribute('data-page') === target) {
-      toggleMenu(false);
-      return;
-    }
-
-    if (current) {
-      current.classList.add('leaving');
-      setTimeout(() => {
-        current.classList.remove('active', 'leaving');
-      }, 220);
-    }
-
-    const next = document.querySelector(`.page[data-page="${target}"]`);
-    if (next) {
-      // wait for old page to clear out of the way so reveal feels intentional
-      setTimeout(() => {
-        next.classList.add('active');
-        next.scrollTop = 0;
-        resetScrollTarget();
-        // unfold this page's headings (FoldText) once the page is fading in
-        if (window.__foldPage) setTimeout(() => window.__foldPage(next), 280);
-      }, 260);
-    }
 
     menuLinks.forEach(a => {
       a.classList.toggle('active', a.getAttribute('data-page') === target);
     });
-
     const i = order.indexOf(target);
     if (i > -1 && pageStamp) {
       const key = pageStamp.querySelector('.key');
       if (key) key.textContent = String(i + 1).padStart(2, '0');
     }
+    if (history_ !== 'skip' && location.hash !== '#' + target) {
+      // a real history entry per page, so Back / Forward move between pages
+      if (history_ === 'replace') history.replaceState(null, '', '#' + target);
+      else history.pushState(null, '', '#' + target);
+    }
+    document.title = titleFor(target);
 
-    if (!skipHistory) {
-      history.replaceState(null, '', '#' + target);
+    if (target === currentTarget) return;
+    currentTarget = target;
+
+    // a newer navigation always wins: drop the pending steps of the previous one
+    clearTimeout(leaveTimer); clearTimeout(enterTimer); clearTimeout(foldTimer);
+    const next = document.querySelector(`.page[data-page="${target}"]`);
+    pages.forEach(p => {
+      if (p !== next && p.classList.contains('active')) p.classList.add('leaving');
+    });
+    leaveTimer = setTimeout(() => {
+      pages.forEach(p => { if (p !== next) p.classList.remove('active', 'leaving'); });
+    }, 220);
+    if (next) {
+      next.classList.remove('leaving');
+      // wait for old page to clear out of the way so reveal feels intentional
+      enterTimer = setTimeout(() => {
+        next.classList.add('active');
+        next.scrollTop = 0;
+        // unfold this page's headings (FoldText) once the page is fading in
+        if (window.__foldPage) foldTimer = setTimeout(() => window.__foldPage(next), 280);
+      }, 260);
     }
   }
 
@@ -3286,8 +3356,7 @@
 
   function initFromHash() {
     const h = location.hash.replace('#', '');
-    if (h && order.includes(h)) go(h, true);
-    else go('home', true);
+    go(h && order.includes(h) ? h : 'home', 'skip');
   }
   window.addEventListener('hashchange', initFromHash);
   initFromHash();
@@ -3299,12 +3368,12 @@
       // only allow number jumps while menu is open
       if (/^[1-5]$/.test(e.key)) {
         toggleMenu(false);
-        setTimeout(() => go(order[parseInt(e.key, 10) - 1]), 250);
+        setTimeout(() => go(order[parseInt(e.key, 10) - 1], 'replace'), 250);
       }
       return;
     }
     if (/^[1-5]$/.test(e.key)) {
-      go(order[parseInt(e.key, 10) - 1]);
+      go(order[parseInt(e.key, 10) - 1], 'replace');
     } else if (e.key === 'm' || e.key === 'M') {
       toggleMenu();
     }
@@ -3519,7 +3588,7 @@
     }
     // which one video may run right now (never more than one)
     function wanted() {
-      if (REDUCED || document.hidden) return '';
+      if (REDUCED || document.hidden || (window.__winAway && window.__winAway())) return '';   // hidden tab / window long in the background
       if (loaderUp()) return 'mini';
       if (html.classList.contains('intro-hold')) return '';
       const page = body.dataset.page;
@@ -3604,6 +3673,7 @@
     }
     document.addEventListener('pagechange', sync);
     document.addEventListener('visibilitychange', sync);
+    document.addEventListener('winaway', sync);
     // just before the intro's fade: let the hero video buffer, so it is running when the overlay thins
     document.addEventListener('introleave', () => {
       const a = atoms.hero;
@@ -4636,6 +4706,11 @@ void main() {
     const o = OPTS;
     let created = false, running = false, scheduled = false;
     let renderer, gl, program, mesh;
+    // 30 fps: the waves drift slowly, so every second frame of a 60 Hz screen is
+    // enough. Time-based (also right on 120 Hz); the clock only advances while
+    // drawing, so the pattern continues where it stopped after a pause.
+    const FRAME_MS = 1000 / 30 - 4;
+    let lastDraw = 0, clock = 0;
     const currentMouse = [0.5, 0.5];
     let targetMouse = [0.5, 0.5];
 
@@ -4648,6 +4723,8 @@ void main() {
 
     function create() {
       created = true;
+      clock = performance.now() * 0.001;      // same starting phase as before (uTime was the rAF timestamp)
+      // ogl defaults: dpr 1, antialias off — the canvas is already drawn at CSS-pixel size
       renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
       gl = renderer.gl;
       gl.clearColor(0, 0, 0, 0);
@@ -4695,10 +4772,15 @@ void main() {
     function loop(time) {
       if (!running) { scheduled = false; return; }
       requestAnimationFrame(loop);
-      program.uniforms.uTime.value = time * 0.001;
+      if (lastDraw && time - lastDraw < FRAME_MS) return;
+      const dt = lastDraw ? Math.min(0.1, (time - lastDraw) / 1000) : 0;
+      lastDraw = time;
+      clock += dt;
+      program.uniforms.uTime.value = clock;
       if (o.enableMouseInteraction) {
-        currentMouse[0] += 0.05 * (targetMouse[0] - currentMouse[0]);
-        currentMouse[1] += 0.05 * (targetMouse[1] - currentMouse[1]);
+        const k = 1 - Math.pow(0.95, dt * 60);   // the old 0.05 per 60 Hz frame, per elapsed time
+        currentMouse[0] += k * (targetMouse[0] - currentMouse[0]);
+        currentMouse[1] += k * (targetMouse[1] - currentMouse[1]);
         program.uniforms.uMouse.value[0] = currentMouse[0];
         program.uniforms.uMouse.value[1] = currentMouse[1];
       }
@@ -4709,7 +4791,7 @@ void main() {
     }
 
     window.__bindBg(['home'],
-      () => { if (!created) create(); running = true; if (!scheduled) { scheduled = true; requestAnimationFrame(loop); } },
+      () => { if (!created) create(); lastDraw = 0; running = true; if (!scheduled) { scheduled = true; requestAnimationFrame(loop); } },
       () => { running = false; }
     );
   }
@@ -4850,7 +4932,8 @@ void main() {
   if (container && !reduced) {
     const o = OPTS;
     let created = false, running = false, scheduled = false;
-    let renderer, scene, camera, material, t0 = 0, last = 0;
+    let renderer, scene, camera, material, elapsed = 0, last = 0;
+    const FRAME_MS = 1000 / 30 - 4;         // 30 fps, time-based (soft, slow colour bands)
     const ptrTarget = new THREE.Vector2(0, 0);
     const ptrCurrent = new THREE.Vector2(0, 0);
 
@@ -4906,7 +4989,7 @@ void main() {
 
       renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', alpha: true });
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));   // soft gradients: 1.25 is plenty
       renderer.setClearColor(0x000000, o.transparent ? 0 : 1);
       renderer.domElement.style.width = '100%';
       renderer.domElement.style.height = '100%';
@@ -4922,15 +5005,17 @@ void main() {
         ptrTarget.set(x, y);
       }, { passive: true });
 
-      t0 = performance.now(); last = t0;
+      last = performance.now();
       window.__colorBends = material;
     }
 
     function loop(now) {
       if (!running) { scheduled = false; return; }
       requestAnimationFrame(loop);
-      const dt = Math.min(0.05, (now - last) / 1000); last = now;
-      const elapsed = (now - t0) / 1000;
+      if (now - last < FRAME_MS) return;
+      const raw = (now - last) / 1000; last = now;
+      const dt = Math.min(0.05, raw);
+      elapsed += Math.min(0.1, raw);          // advances only while drawing → no jump after a pause
       material.uniforms.uTime.value = elapsed;
 
       const deg = (o.rotation % 360) + o.autoRotate * elapsed;
@@ -5130,6 +5215,7 @@ float cnoise(vec3 P){
     const o = OPTS;
     let created = false, running = false, scheduled = false;
     let renderer, scene, camera, material, last = 0;
+    const FRAME_MS = 1000 / 30 - 4;         // 30 fps, time-based (slow drift, no pointer input)
 
     function resize() {
       const w = container.clientWidth || 1, h = container.clientHeight || 1;
@@ -5215,11 +5301,14 @@ float cnoise(vec3 P){
       scene.add(group);
       scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      // MSAA only on 1x screens, where it is the only edge smoothing and the canvas is
+      // small; on hi-dpi screens the 1.25x buffer is scaled up by the browser instead
+      const dpr = window.devicePixelRatio || 1;
+      renderer = new THREE.WebGLRenderer({ antialias: dpr <= 1, powerPreference: 'high-performance' });
       // match react-three-fiber's defaults so the look is identical
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(Math.min(dpr, 1.25));   // was up to 2 (≈5.6 MP on a retina laptop)
       renderer.domElement.style.width = '100%';
       renderer.domElement.style.height = '100%';
       renderer.domElement.style.display = 'block';
@@ -5232,6 +5321,7 @@ float cnoise(vec3 P){
     function loop(now) {
       if (!running) { scheduled = false; return; }
       requestAnimationFrame(loop);
+      if (now - last < FRAME_MS) return;
       const delta = Math.min(0.05, (now - last) / 1000); last = now;
       material.uniforms.time.value += 0.1 * delta;
       renderer.render(scene, camera);
