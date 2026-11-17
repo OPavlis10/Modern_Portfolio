@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Ondřej Pavlis — OPavlis10</title>
 <meta name="description" content="Ondřej Pavlis (OPavlis10) — Student · Developer · Cybersecurity Enthusiast. Passionate about fitness, technology and pushing boundaries through code." />
+<!-- Share image (Open Graph / Twitter) — the atom, assets/atom/og.jpg, 1200×630 -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ondrej.pavlis.net/" />
+<meta property="og:title" content="Ondřej Pavlis — OPavlis10" />
+<meta property="og:description" content="Ondřej Pavlis (OPavlis10) — Student · Developer · Cybersecurity Enthusiast. Passionate about fitness, technology and pushing boundaries through code." />
+<meta property="og:image" content="https://ondrej.pavlis.net/assets/atom/og.jpg" />
+<meta property="og:image:type" content="image/jpeg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="A glowing violet atom with three orbit rings on a dark background" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Ondřej Pavlis — OPavlis10" />
+<meta name="twitter:description" content="Ondřej Pavlis (OPavlis10) — Student · Developer · Cybersecurity Enthusiast. Passionate about fitness, technology and pushing boundaries through code." />
+<meta name="twitter:image" content="https://ondrej.pavlis.net/assets/atom/og.jpg" />
+<meta name="twitter:image:alt" content="A glowing violet atom with three orbit rings on a dark background" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -1893,13 +1908,314 @@
     0%   { transform: scaleX(0); }
     100% { transform: scaleX(1); }
   }
+
+  /* ========================================================
+     ATOM — the looping atom (assets/atom/) in three places:
+       #atomHero    beside the home wordmark (the INTRO "lands" on it)
+       #atomContact dim, under the clock card on the contact page
+       .l-atom      64px, in the LOADER
+     The two page atoms are fixed layers that sit between the WebGL
+     backgrounds and main#app — a .page is an isolated stacking
+     context, so a blend mode inside it would never reach the canvas.
+     Position + size are set by the ATOM script, which measures the
+     free space next to the text and follows the page's scroll.
+     No square is ever visible: contrast() crushes the video's own
+     background (#0a0a0f, grain up to ~17) to pure black, `screen`
+     then adds nothing for black, and the mask melts the frame edges.
+     ======================================================== */
+  .atom-layer, .atom-shade {
+    display: none;                 /* until the script has found a free spot */
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 2;                    /* above backgrounds + particles, below main#app */
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    will-change: transform, opacity;
+  }
+  .atom-layer.placed, .atom-shade.placed { display: block; }
+  .atom-layer { mix-blend-mode: screen; }
+  /* soft dark pool under the hero atom — calms the LineWaves behind it */
+  .atom-shade {
+    background: radial-gradient(circle closest-side,
+      rgba(8, 8, 14, 0.62) 0%, rgba(8, 8, 14, 0.44) 52%, rgba(8, 8, 14, 0) 100%);
+  }
+  .atom-vid {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    filter: contrast(1.18);        /* levels ≤ 19 → 0: the video background becomes true black */
+    /* the rings reach to ~6% from the frame edges and past the inscribed circle,
+       so: a wide radial for the corners ∩ two linear fades for the four edges */
+    -webkit-mask-image:
+      radial-gradient(circle farthest-corner, #000 82%, transparent 98%),
+      linear-gradient(90deg,  transparent 0, #000 6%, #000 94%, transparent 100%),
+      linear-gradient(180deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+            mask-image:
+      radial-gradient(circle farthest-corner, #000 82%, transparent 98%),
+      linear-gradient(90deg,  transparent 0, #000 6%, #000 94%, transparent 100%),
+      linear-gradient(180deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+    -webkit-mask-composite: source-in, source-in;
+            mask-composite: intersect, intersect;
+  }
+  /* iOS (Low Power Mode): no native "start playback" glyph over a refused autoplay */
+  .atom-vid::-webkit-media-controls,
+  .atom-vid::-webkit-media-controls-start-playback-button {
+    display: none !important;
+    -webkit-appearance: none;
+  }
+  /* show each one only with its page (same idea as the .bg-gl layers) */
+  body[data-page="home"] .atom-hero.placed,
+  body[data-page="home"] .atom-shade.placed {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.95s var(--ease-expo) 0.34s, visibility 0s linear 0s;
+  }
+  body[data-page="contact"] .atom-contact.placed {
+    opacity: 0.4;                  /* calm: must not fight the Beams */
+    visibility: visible;
+    transition: opacity 1.2s var(--ease-expo) 0.45s, visibility 0s linear 0s;
+  }
+  /* wait under the INTRO overlay; when it actually played, the script flies the
+     hero atom from the intro's centred position to its place (.landing) */
+  html.intro-hold body[data-page] .atom-layer.placed,
+  html.intro-hold body[data-page] .atom-shade.placed { opacity: 0; }
+  body[data-page="home"] .atom-hero.placed.landing,
+  body[data-page="home"] .atom-shade.placed.landing { transition: none; }
+  /* loader: sits on the loader's own background, so `screen` works there too */
+  .l-mark .l-atom {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 18px;
+    mix-blend-mode: screen;
+  }
+
+  /* ========================================================
+     INTRO — one-time video overlay (first visit per session)
+     Sits above everything (loader, cursor, menu). Its background is
+     the video's own measured background (#0a0a0e), not --bg, and the
+     radial mask melts the frame edges — so there is no visible seam.
+     html.intro-on       → overlay is in the page
+     html.intro-noloader → loader stays out of the way (dropped if the page is
+                           still loading when the intro leaves: it fades into the loader)
+     html.intro-hold     → home page waits in its pre-enter state underneath
+     ======================================================== */
+  #intro { display: none; }
+  html.intro-on #intro {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: #0a0a0e;
+    overflow: hidden;
+    cursor: pointer;
+    touch-action: none;
+    overscroll-behavior: contain;
+    transition: opacity 0.7s var(--ease-smooth);
+  }
+  html.intro-noloader #loader { display: none; }
+  #intro.leaving { opacity: 0; pointer-events: none; }
+  #intro.leaving.fast { transition-duration: 0.25s; }
+  #intro video {
+    position: absolute;
+    top: 50%; left: 50%;
+    /* contain on wide screens (the atom fills ~84% of the frame height);
+       on narrow ones grow until the atom (~45% of the frame width) fits —
+       only empty background is cropped */
+    width: min(177.78vh, 192vw);
+    width: min(177.78dvh, 192vw);     /* follow the visible viewport (mobile URL bar) */
+    aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(ellipse closest-side, #000 86%, transparent 100%);
+            mask-image: radial-gradient(ellipse closest-side, #000 86%, transparent 100%);
+  }
+  .intro-skip {
+    position: absolute;
+    bottom: 30px; right: 32px;
+    padding: 6px 4px;
+    background: none;
+    border: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  .intro-skip .key { color: var(--accent); }
+  .intro-skip:hover, .intro-skip:focus-visible { color: var(--text); }
+  .intro-skip:focus-visible { outline: 1px solid var(--accent); outline-offset: 4px; }
+  @media (max-width: 720px) { .intro-skip { bottom: 18px; right: 18px; } }
+  @media (pointer: coarse)  { .intro-skip .key { display: none; } }
+
+  /* hold the home page's entrance until the overlay starts to fade */
+  html.intro-hold .page.active { opacity: 0; transform: translateY(36px) scale(0.985); }
+  html.intro-hold .page.active .line-mask > span { opacity: 0; transform: translateY(110%) rotateX(-35deg); }
+  html.intro-hold .page.active .stagger > * { opacity: 0; transform: translateY(22px); }
+  html.intro-hold .ambient i { animation-play-state: paused; }
 </style>
 </head>
 <body data-page="home">
 
+<!-- INTRO — one-time video overlay. The <source>s and poster are added by the
+     script below, so nothing is downloaded when the intro is not shown. -->
+<div id="intro">
+  <video muted playsinline preload="auto" disablepictureinpicture aria-hidden="true"></video>
+  <button class="intro-skip" type="button" aria-label="Skip intro">Skip <span class="key">esc</span></button>
+</div>
+<script>
+  // ============================================================
+  // INTRO — plays ~3.2s of the video once per session, then cross-fades
+  // into the home page. Inline + first in <body> so it runs before paint.
+  // Never blocks the site: any error / stall / rejected autoplay removes it.
+  // ============================================================
+  (function () {
+    const intro = document.getElementById('intro');
+    const html  = document.documentElement;
+    const DIR = 'assets/intro/';
+    const PLAY_MS = 3200, FADE_MS = 700, SKIP_FADE_MS = 250, START_MS = 3000, STALL_MS = 1500;
+
+    // once per session · not for deep links · not in a background tab · not with reduced motion
+    let seen = false;
+    try { seen = sessionStorage.getItem('introSeen') === '1'; }
+    catch (e) { seen = true; }        // storage blocked → can't be one-time, so don't show it
+    const hash = location.hash.replace('#', '');
+    if (seen || (hash && hash !== 'home') || document.hidden ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      intro.remove();
+      return;
+    }
+    // counted as seen only once it has really played (or was skipped on purpose)
+    const markSeen = () => { try { sessionStorage.setItem('introSeen', '1'); } catch (e) {} };
+
+    const video = intro.querySelector('video');
+    let state = 'up';                 // up → leaving → gone
+    let playTimer = 0, stallTimer = 0, bgTimer = 0;
+
+    window.__introBoots = true;       // tells the LOADER block to stand down
+    window.__introHoldsBg = true;     // tells __bindBg not to render under the opaque overlay
+    html.classList.add('intro-on', 'intro-noloader', 'intro-hold');
+
+    // let the page backgrounds start (just before the fade, or on bail)
+    function wakeBg() {
+      if (!window.__introHoldsBg) return;
+      window.__introHoldsBg = false;
+      document.dispatchEvent(new Event('introleave'));
+    }
+
+    // hand the page its entrance (what the loader does on a normal visit)
+    function release(played) {
+      html.classList.remove('intro-hold');
+      wakeBg();
+      const loaded = document.readyState === 'complete';
+      // page still loading → the regular loader takes over (the overlay fades into it);
+      // after a played intro it only holds briefly once the page is ready
+      if (!loaded) {
+        window.__introBoots = false;
+        window.__introPlayed = played;
+        html.classList.remove('intro-noloader');
+        return;
+      }
+      const loader = document.getElementById('loader');
+      if (loader) loader.classList.add('gone');
+      setTimeout(() =>
+        window.__foldPage && window.__foldPage(document.querySelector('.page.active')), 150);
+    }
+
+    // take the overlay out of the DOM and free the video
+    function destroy() {
+      if (state === 'gone') return;
+      state = 'gone';
+      clearTimeout(playTimer); clearTimeout(stallTimer); clearTimeout(bgTimer);
+      window.removeEventListener('keydown', onKey, true);
+      video.pause();
+      video.removeAttribute('poster');
+      video.replaceChildren();        // drop the <source>s
+      video.removeAttribute('src');
+      video.load();
+      intro.remove();                 // focus (if it was on the skip hint) falls back to the page
+      html.classList.remove('intro-on', 'intro-noloader');
+    }
+
+    // cross-fade out while the home page animates in underneath
+    function leave(fast) {
+      if (state !== 'up') return;
+      state = 'leaving';
+      clearTimeout(playTimer); clearTimeout(stallTimer); clearTimeout(bgTimer);
+      window.removeEventListener('keydown', onKey, true);   // page shortcuts work during the fade
+      markSeen();
+      release(true);
+      intro.classList.add('leaving');
+      if (fast) intro.classList.add('fast');
+      setTimeout(destroy, (fast ? SKIP_FADE_MS : FADE_MS) + 60);
+    }
+
+    // video can't play → no fade, just get out of the way
+    function bail() {
+      if (state !== 'up') return;
+      release(false);
+      destroy();
+    }
+
+    function onKey(e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      e.stopPropagation();            // keep 1–5 / M shortcuts quiet while the intro is up
+      if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        leave(true);
+      } else if (e.key === 'Tab') {   // the skip hint is the only stop
+        e.preventDefault();
+        intro.querySelector('.intro-skip').focus();
+      }
+    }
+    window.addEventListener('keydown', onKey, true);
+    intro.addEventListener('click', () => leave(true));
+
+    const armStall = ms => { clearTimeout(stallTimer); stallTimer = setTimeout(bail, ms); };
+    video.addEventListener('playing', () => {
+      clearTimeout(stallTimer);
+      if (state !== 'up' || playTimer) return;
+      markSeen();
+      playTimer = setTimeout(() => leave(false), PLAY_MS);
+      bgTimer = setTimeout(wakeBg, PLAY_MS - 350);   // backgrounds warm up just before the fade
+    });
+    video.addEventListener('waiting', () => { if (state === 'up' && playTimer) armStall(STALL_MS); });   // mid-play stall
+    video.addEventListener('ended', () => leave(false));
+    video.addEventListener('error', bail);
+
+    // 720p mp4 on small screens (narrow window, or a phone / small tablet in any
+    // orientation), otherwise webm first, then mp4
+    const small = window.matchMedia('(max-width: 720px)').matches ||
+                  Math.min(screen.width, screen.height) <= 820;
+    const files = small
+      ? [['intro-720.mp4', 'video/mp4']]
+      : [['intro.webm', 'video/webm'], ['intro.mp4', 'video/mp4']];
+    video.poster = DIR + 'poster.jpg';
+    files.forEach(([file, type], i) => {
+      const s = document.createElement('source');
+      s.src = DIR + file;
+      s.type = type;
+      if (i === files.length - 1) s.addEventListener('error', bail);   // no source worked
+      video.appendChild(s);
+    });
+
+    armStall(START_MS);               // must be playing within 3s (cold connection)
+    const p = video.play();
+    if (p && p.catch) p.catch(bail);  // autoplay rejected
+  })();
+</script>
+
 <!-- LOADER -->
 <div id="loader">
   <div class="l-mark">
+    <!-- ATOM (loader) — poster + sources are added by the ATOM script only when the loader really shows -->
+    <video class="l-atom atom-vid" width="64" height="64" muted loop playsinline preload="none" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
     <div class="big">Ondřej Pavlis</div>
     <div class="sm">Initializing portfolio</div>
     <div class="bar"></div>
@@ -1920,6 +2236,18 @@
   <i style="left:38%; animation-duration:46s; animation-delay:12s; background:var(--accent-2); box-shadow:0 0 14px var(--accent-2);"></i>
   <i style="left:68%; animation-duration:42s; animation-delay:6s;"></i>
   <i style="left:88%; animation-duration:50s; animation-delay:22s; background:var(--accent-2); box-shadow:0 0 14px var(--accent-2);"></i>
+</div>
+
+<!-- ATOM — looping atom layers (home hero + contact). Fixed, under main#app;
+     placed, sized and played by the ATOM script. Sources are added there
+     (webm + mp4, or the 360p mp4 on small screens), so nothing but the hero
+     poster is fetched before it is needed. -->
+<div class="atom-shade" id="atomHeroShade" aria-hidden="true"></div>
+<div class="atom-layer atom-hero" id="atomHero" aria-hidden="true">
+  <video class="atom-vid" width="720" height="720" muted loop playsinline preload="metadata" poster="assets/atom/atom-poster.jpg" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
+</div>
+<div class="atom-layer atom-contact" id="atomContact" aria-hidden="true">
+  <video class="atom-vid" width="360" height="360" muted loop playsinline preload="none" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
 </div>
 
 
@@ -2684,10 +3012,14 @@
   // LOADER
   // ============================================================
   window.addEventListener('load', () => {
+    // first visit: the INTRO overlay is up and boots the page itself when it fades
+    if (window.__introBoots) return;
     // a beat longer so the progress bar gets to finish — feels intentional
-    setTimeout(() => document.getElementById('loader').classList.add('gone'), 1500);
+    // (after a played intro the loader is only a short bridge, no need to linger)
+    const hold = window.__introPlayed ? 300 : 1500;
+    setTimeout(() => document.getElementById('loader').classList.add('gone'), hold);
     // unfold the headings on the first page once the loader is on its way out
-    setTimeout(() => window.__foldPage && window.__foldPage(document.querySelector('.page.active')), 1650);
+    setTimeout(() => window.__foldPage && window.__foldPage(document.querySelector('.page.active')), hold + 150);
   });
 
   // ============================================================
@@ -2886,15 +3218,18 @@
   // Keeps rendering ~1.2s after leaving so the opacity crossfade stays smooth.
   window.__bindBg = function (pages, start, stop) {
     let active = false, stopTimer = null;
+    // not in a hidden tab, and not underneath the opaque INTRO overlay
+    const canRun = () => !document.hidden && !window.__introHoldsBg;
     function apply(page) {
       const on = pages.includes(page);
-      if (on && !active) { active = true; clearTimeout(stopTimer); if (!document.hidden) start(); }
+      if (on && !active) { active = true; clearTimeout(stopTimer); if (canRun()) start(); }
       else if (!on && active) { active = false; stopTimer = setTimeout(stop, 1200); }
     }
     document.addEventListener('pagechange', e => apply(e.detail));
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) stop(); else if (active) start();
+      if (document.hidden) stop(); else if (active && canRun()) start();
     });
+    document.addEventListener('introleave', () => { if (active && canRun()) start(); });
     apply(document.body.dataset.page || 'home');
   };
 
@@ -3011,6 +3346,291 @@
   console.log('%c+ Ondřej Pavlis', 'font:600 22px Inter,sans-serif;color:#ededf2;');
   console.log('%c  build · break · learn — opavlis10', 'font:13px JetBrains Mono,monospace;color:#c8b4ff;');
   console.log('%c  "Be uncommon amongst uncommon people." — DG', 'font:13px serif;font-style:italic;color:#93f9d2;');
+</script>
+
+<!-- ============================================================
+     ATOM — the looping atom (assets/atom/): home hero, contact page, loader.
+     · place: measures the free space next to the text (layout offsets, so the
+       pages' enter transforms don't matter) and parks the fixed layers there;
+       they follow their page's own scroll. No room → the layer is not shown.
+     · play: exactly one video runs at a time — the loader's while the loader
+       is up, the hero's on Home, the contact one on Contact — and only in a
+       visible tab. Everything else is paused. Reduced motion → posters only.
+     · land: when the INTRO really played, the hero atom starts at the intro
+       atom's centred size and glides to its place during the cross-fade.
+     ============================================================ -->
+<script>
+  (function () {
+    const DIR = 'assets/atom/';
+    const html = document.documentElement, body = document.body;
+    const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // same "small screen" test as the INTRO: phones / small tablets get the 360p file
+    const SMALL = window.matchMedia('(max-width: 720px)').matches ||
+                  Math.min(screen.width, screen.height) <= 820;
+
+    const loader    = document.getElementById('loader');
+    const home      = document.querySelector('.page[data-page="home"]');
+    const contact   = document.querySelector('.page[data-page="contact"]');
+    const heroEl    = document.getElementById('atomHero');
+    const shadeEl   = document.getElementById('atomHeroShade');
+    const contactEl = document.getElementById('atomContact');
+    if (!home || !contact || !heroEl || !shadeEl || !contactEl) return;
+
+    const WEBM = 'video/webm', MP4 = 'video/mp4';
+    const atoms = {
+      mini:    { v: loader && loader.querySelector('.l-atom'), poster: 'atom-mini-poster.jpg',
+                 files: [['atom-mini.webm', WEBM], ['atom-mini.mp4', MP4]] },
+      hero:    { v: heroEl.querySelector('video'),
+                 files: SMALL ? [['atom-loop-360.mp4', MP4]]
+                              : [['atom-loop.webm', WEBM], ['atom-loop.mp4', MP4]] },
+      contact: { v: contactEl.querySelector('video'), poster: 'atom-poster.jpg',
+                 files: [['atom-loop-360.mp4', MP4]] }
+    };
+    const hero = { x: 0, y: 0, size: 0 };     // page coordinates (scrollTop 0); size 0 = no room
+    const cont = { x: 0, y: 0, size: 0 };
+
+    // ---------- place ----------
+    const HERO_MIN = 96, CONTACT_MIN = 150;   // smaller than this → don't show it at all
+    const TOP_CLEAR = 84;                     // stay below the menu button
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    // an element's box inside its page, from layout offsets (transforms ignored)
+    function boxIn(el, page) {
+      let l = 0, t = 0;
+      for (let n = el; n && n !== page; n = n.offsetParent) { l += n.offsetLeft; t += n.offsetTop; }
+      return { l, t, r: l + el.offsetWidth, b: t + el.offsetHeight, h: el.offsetHeight };
+    }
+    function setBox(el, x, y, size) {
+      el.style.width = el.style.height = Math.round(size) + 'px';
+      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+    }
+
+    function measureHero() {
+      hero.size = 0;
+      const h1 = home.querySelector('h1.tech-text'), name = h1 && h1.querySelector('.tt-src');
+      const meta = home.querySelector('.home-meta');
+      const box = home.querySelector('.container');
+      const W = home.clientWidth;
+      if (!h1 || !name || !meta || !W) return;
+      const H = boxIn(h1, home), M = boxIn(meta, home);
+      // stay attached to the content column on ultrawide screens
+      const right = box ? Math.min(W - 24, boxIn(box, home).r + 60) : W - 24;
+      // the h1 is a full-width block: take the width of its text (+2% for the page's enter scale)
+      const nameR = H.l + Math.ceil(name.getBoundingClientRect().width * 1.02);
+      let textR = nameR;
+      home.querySelectorAll('.hero-sub, .role-row .chip')
+        .forEach(el => { textR = Math.max(textR, boxIn(el, home).r); });
+      // the eyebrow is stretched to the full width too → measure where its text ends
+      const eb = home.querySelector('.home-wrap > .eyebrow');
+      if (eb) {
+        const rg = document.createRange();
+        rg.selectNodeContents(eb);
+        textR = Math.max(textR, boxIn(eb, home).l +
+          Math.ceil((rg.getBoundingClientRect().right - eb.getBoundingClientRect().left) * 1.02));
+      }
+      // A: right of everything (name, paragraph, pills), between the menu button and the meta row
+      const a = { l: textR + 36, t: TOP_CLEAR, b: M.t - 20 };
+      // B: right of the name only, inside the wordmark's own band (tablets / phones)
+      const b = { l: nameR + 28, t: H.t - 10, b: H.b + 10 };
+      const sa = Math.min(right - a.l, a.b - a.t), sb = Math.min(right - b.l, b.b - b.t);
+      const cap = Math.min(W * 0.46, 720);
+      const z = sa >= sb ? a : b;
+      const size = Math.floor(Math.min(Math.max(sa, sb), cap));
+      if (size < HERO_MIN) return;
+      const cy = clamp(H.t + H.h / 2, z.t + size / 2, z.b - size / 2);   // centred on the wordmark where it fits
+      hero.size = size;
+      hero.x = z.l + (right - z.l - size) / 2;
+      hero.y = cy - size / 2;
+    }
+
+    function measureContact() {
+      cont.size = 0;
+      const wrap = contact.querySelector('.contact-wrap'), left = contact.querySelector('.contact-left');
+      const col = contact.querySelector('.contact-right'), card = contact.querySelector('.clock-card');
+      const box = contact.querySelector('.container');
+      const W = contact.clientWidth;
+      if (!wrap || !left || !col || !card || !box || !W) return;
+      const L = boxIn(left, contact), C = boxIn(col, contact);
+      if (C.l < L.r) return;                  // one column (≤ 900px): no text-free spot → not shown
+      // the empty area under the clock card, down to the end of the page (clear of the corner stamp)
+      let right = Math.min(boxIn(box, contact).r + 40, W - 24);
+      const stamp = document.getElementById('pageNumStamp');     // fixed, bottom right: stay left of it
+      if (stamp && stamp.offsetWidth) right = Math.min(right, stamp.getBoundingClientRect().left - 12);
+      let top = boxIn(card, contact).b + 32;
+      let bottom = Math.max(boxIn(wrap, contact).b + 56, contact.clientHeight - 64);
+      // the page scrolls: never let the first screen's bottom edge slice the atom —
+      // keep it whole on the first screen if it fits there, else whole below the fold
+      const fold = contact.clientHeight;
+      if (bottom > fold) {
+        if (fold - 16 - top >= CONTACT_MIN) bottom = fold - 16;
+        else top = Math.max(top, fold);
+      }
+      const size = Math.floor(Math.min(right - C.l, bottom - top, W * 0.36, 520));
+      if (size < CONTACT_MIN) return;
+      cont.size = size;
+      cont.x = right - size;
+      cont.y = bottom - size;
+    }
+
+    // is the placed box inside the viewport at its page's current scroll position?
+    function seen(a, page) {
+      const y = a.y - page.scrollTop;
+      return a.size > 0 && y + a.size > 0 && y < window.innerHeight;
+    }
+    // both return true when the layer has just scrolled into / out of view
+    function applyHero() {
+      const on = hero.size > 0, was = hero.vis;
+      heroEl.classList.toggle('placed', on);
+      shadeEl.classList.toggle('placed', on);
+      hero.vis = seen(hero, home);
+      if (on) {
+        const y = hero.y - home.scrollTop, pad = hero.size * 0.15;
+        setBox(heroEl, hero.x, y, hero.size);
+        setBox(shadeEl, hero.x - pad, y - pad, hero.size + pad * 2);
+      }
+      return hero.vis !== was;
+    }
+    function applyContact() {
+      const on = cont.size > 0, was = cont.vis;
+      contactEl.classList.toggle('placed', on);
+      cont.vis = seen(cont, contact);
+      if (on) setBox(contactEl, cont.x, cont.y - contact.scrollTop, cont.size);
+      return cont.vis !== was;
+    }
+    function place() {
+      measureHero(); measureContact();
+      applyHero(); applyContact();
+      sync();
+    }
+
+    // ---------- play ----------
+    // the loader is on screen (the INTRO keeps it out of the way with html.intro-noloader)
+    const loaderUp = () => !!loader && !loader.classList.contains('gone') &&
+                           !html.classList.contains('intro-noloader');
+    // poster + <source>s, once, right before the video is first needed
+    function arm(a) {
+      if (!a.v || a.armed) return;
+      a.armed = true;
+      if (a.poster) a.v.poster = DIR + a.poster;
+      if (REDUCED) return;                    // reduced motion: the poster is all there is
+      a.files.forEach(([file, type]) => {
+        const s = document.createElement('source');
+        s.src = DIR + file;
+        s.type = type;
+        a.v.appendChild(s);
+      });
+    }
+    // which one video may run right now (never more than one)
+    function wanted() {
+      if (REDUCED || document.hidden) return '';
+      if (loaderUp()) return 'mini';
+      if (html.classList.contains('intro-hold')) return '';
+      const page = body.dataset.page;
+      if (page === 'home' && seen(hero, home)) return 'hero';            // scrolled out of view → paused
+      if (page === 'contact' && seen(cont, contact)) return 'contact';
+      return '';
+    }
+    // a refused play() (autoplay blocked, iOS Low Power Mode) is retried inside the
+    // next real user gesture; the listeners go away again once a video plays
+    let retrying = false;
+    const GESTURES = ['click', 'touchend', 'keydown'];
+    const onGesture = () => sync();
+    function retryOnGesture(on) {
+      if (on === retrying) return;
+      retrying = on;
+      GESTURES.forEach(t => on ? document.addEventListener(t, onGesture, true)
+                               : document.removeEventListener(t, onGesture, true));
+    }
+    function sync() {
+      const page = body.dataset.page, up = loaderUp();
+      if (up) arm(atoms.mini);
+      // not while the INTRO holds: its own video needs the bandwidth (armed on 'introleave')
+      if (page === 'home' && hero.size && !html.classList.contains('intro-hold')) arm(atoms.hero);
+      if (page === 'contact' && cont.size) arm(atoms.contact);
+      const run = wanted();
+      for (const key in atoms) {
+        const a = atoms[key];
+        if (!a.v || !a.armed || a.freed) continue;
+        if (key === run) {
+          if (a.v.paused) {                   // refused → the poster stays until the next gesture
+            const p = a.v.play();
+            if (p && p.then) p.then(() => retryOnGesture(false),
+                                    e => { if (e && e.name === 'NotAllowedError') retryOnGesture(true); });
+          }
+        } else if (!a.v.paused) {
+          a.v.pause();
+        }
+      }
+      // loader gone for good → drop its video once the loader has faded
+      const mini = atoms.mini;
+      if (!up && mini.armed && !mini.freed) {
+        mini.freed = true;
+        setTimeout(() => { mini.v.replaceChildren(); mini.v.removeAttribute('src'); mini.v.load(); }, 1000);
+      }
+    }
+
+    // ---------- land (after a played INTRO) ----------
+    // The intro video is 16:9, min(100vh, 108vw) tall, centred; the square the
+    // loop was cropped from is 1000/1080 of that height → same atom, same spot.
+    function land() {
+      const intro = document.getElementById('intro');
+      // .leaving = it played and is cross-fading (a bail removes #intro at once → plain fade)
+      if (!intro || !intro.classList.contains('leaving')) return;
+      if (!hero.size || body.dataset.page !== 'home' || loaderUp() || !heroEl.animate) return;
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const k = (0.926 * Math.min(vh, 1.08 * vw)) / hero.size;
+      const opts = { duration: intro.classList.contains('fast') ? 520 : 1000,
+                     easing: 'cubic-bezier(0.65, 0, 0.35, 1)' };
+      [heroEl, shadeEl].forEach(el => {
+        const s = el.offsetWidth;
+        const from = `translate3d(${(vw - s) / 2}px, ${(vh - s) / 2}px, 0) scale(${k.toFixed(4)})`;
+        el.classList.add('landing');          // visible at once, no fade — the overlay above does the fading
+        // start keyframe only: the end is the live inline transform, so a scroll or
+        // re-measure during the glide moves the target instead of leaving a jump
+        let anim;
+        try { anim = el.animate([{ transform: from, offset: 0 }], opts); }
+        catch (e) { anim = el.animate([{ transform: from }, { transform: el.style.transform }], opts); }
+        anim.onfinish = anim.oncancel = () => el.classList.remove('landing');
+      });
+    }
+
+    // ---------- wiring ----------
+    home.addEventListener('scroll', () => { if (applyHero()) sync(); }, { passive: true });
+    contact.addEventListener('scroll', () => { if (applyContact()) sync(); }, { passive: true });
+    window.addEventListener('resize', place);
+    window.addEventListener('load', place);
+    window.addEventListener('pageshow', sync);
+    if (window.ResizeObserver) {              // fonts arriving, text re-wrapping, the clock card growing
+      const ro = new ResizeObserver(place);
+      home.querySelectorAll('h1.tech-text, .home-wrap').forEach(el => ro.observe(el));
+      contact.querySelectorAll('.contact-wrap, .clock-card').forEach(el => ro.observe(el));
+    }
+    document.addEventListener('pagechange', sync);
+    document.addEventListener('visibilitychange', sync);
+    // just before the intro's fade: let the hero video buffer, so it is running when the overlay thins
+    document.addEventListener('introleave', () => {
+      const a = atoms.hero;
+      if (body.dataset.page === 'home' && hero.size) arm(a);
+      if (a.armed && !REDUCED) a.v.preload = 'auto';
+    });
+    // html.intro-hold dropped = the intro hands over (same moment the home page enters)
+    let held = html.classList.contains('intro-hold');
+    new MutationObserver(() => {
+      const now = html.classList.contains('intro-hold');
+      if (held && !now) land();
+      held = now;
+      sync();                                 // also catches html.intro-noloader changes
+    }).observe(html, { attributes: true, attributeFilter: ['class'] });
+    if (loader) new MutationObserver(sync).observe(loader, { attributes: true, attributeFilter: ['class'] });
+
+    place();
+
+    // DevTools: __atom.state()
+    window.__atom = {
+      place,
+      state: () => ({ wanted: wanted(), hero: { ...hero }, contact: { ...cont },
+                      playing: Object.keys(atoms).filter(k => atoms[k].v && !atoms[k].v.paused) })
+    };
+  })();
 </script>
 
 <!-- ============================================================
