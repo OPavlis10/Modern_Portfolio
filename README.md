@@ -13,7 +13,7 @@ Single-file, single-page-app style portfolio — five pages (Home, Work, Skills,
 - **Interactive hero wordmark** — hover a letter to see its dashed vector outline and selection frame; drag letters off the baseline and they spring back.
 - **Fold-in headings** — section titles unfold panel by panel when a page opens or scrolls into view.
 - **Tilt cards** on the Skills page — spring-driven 3D tilt with a cursor-following inversion circle.
-- 14 projects on the Work page, a school path on About, live Prague clock on Contact.
+- 22 projects on the Work page, a school path on About, live Prague clock on Contact.
 - Custom cursor, magnetic buttons, scrolling marquees, `prefers-reduced-motion` respected throughout.
 
 Vanilla HTML, CSS and JavaScript — no framework, no build step. Libraries load from jsDelivr:
