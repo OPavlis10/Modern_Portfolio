@@ -1935,11 +1935,9 @@
     will-change: transform, opacity;
   }
   .atom-layer.placed, .atom-shade.placed { display: block; }
-  .atom-layer { mix-blend-mode: screen; }
   /* soft dark pool under the hero atom — calms the LineWaves behind it */
   .atom-shade {
-    background: radial-gradient(circle closest-side,
-      rgba(8, 8, 14, 0.62) 0%, rgba(8, 8, 14, 0.44) 52%, rgba(8, 8, 14, 0) 100%);
+    background: none;              /* was a dark pool under the atom; it read as a darker square */
   }
   .atom-vid {
     display: block;
@@ -1947,19 +1945,6 @@
     height: 100%;
     object-fit: contain;
     pointer-events: none;
-    filter: contrast(1.18);        /* levels ≤ 19 → 0: the video background becomes true black */
-    /* the rings reach to ~6% from the frame edges and past the inscribed circle,
-       so: a wide radial for the corners ∩ two linear fades for the four edges */
-    -webkit-mask-image:
-      radial-gradient(circle farthest-corner, #000 82%, transparent 98%),
-      linear-gradient(90deg,  transparent 0, #000 6%, #000 94%, transparent 100%),
-      linear-gradient(180deg, transparent 0, #000 6%, #000 94%, transparent 100%);
-            mask-image:
-      radial-gradient(circle farthest-corner, #000 82%, transparent 98%),
-      linear-gradient(90deg,  transparent 0, #000 6%, #000 94%, transparent 100%),
-      linear-gradient(180deg, transparent 0, #000 6%, #000 94%, transparent 100%);
-    -webkit-mask-composite: source-in, source-in;
-            mask-composite: intersect, intersect;
   }
   /* iOS (Low Power Mode): no native "start playback" glyph over a refused autoplay */
   .atom-vid::-webkit-media-controls,
@@ -2242,7 +2227,7 @@
      poster is fetched before it is needed. -->
 <div class="atom-shade" id="atomHeroShade" aria-hidden="true"></div>
 <div class="atom-layer atom-hero" id="atomHero" aria-hidden="true">
-  <video class="atom-vid" width="720" height="720" muted loop playsinline preload="metadata" poster="assets/atom/atom60-poster.jpg" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
+  <video class="atom-vid" width="720" height="720" muted loop playsinline preload="metadata" poster="assets/atom/atom-a-poster.png" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
 </div>
 <div class="atom-layer atom-contact" id="atomContact" aria-hidden="true">
   <video class="atom-vid" width="360" height="360" muted loop playsinline preload="none" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
@@ -3375,14 +3360,20 @@
     if (!home || !contact || !heroEl || !shadeEl || !contactEl) return;
 
     const WEBM = 'video/webm', MP4 = 'video/mp4';
+    const UA = navigator.userAgent;
+    const WEBKIT = /iP(hone|ad|od)/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+                   (/Safari\//.test(UA) && !/Chrome|Chromium|Edg\/|OPR\/|Android/.test(UA));
+    const ALPHA = size => WEBKIT ? ['atom-a-' + size + '.mov', 'video/quicktime']
+                                 : ['atom-a-' + size + '.webm', WEBM];
     const atoms = {
       mini:    { v: loader && loader.querySelector('.l-atom'), poster: 'atom-mini-poster.jpg',
                  files: [['atom-mini.webm', WEBM], ['atom-mini.mp4', MP4]] },
+      // truly transparent video, so no blend mode is needed and no square can show:
+      // Safari (and every iOS browser) only does alpha in HEVC, the rest only in VP9
       hero:    { v: heroEl.querySelector('video'),
-                 files: SMALL ? [['atom60-360.mp4', MP4]]
-                              : [['atom60.webm', WEBM], ['atom60.mp4', MP4]] },
-      contact: { v: contactEl.querySelector('video'), poster: 'atom60-poster.jpg',
-                 files: [['atom60-360.mp4', MP4]] }
+                 files: [ALPHA(SMALL ? 256 : 480)] },
+      contact: { v: contactEl.querySelector('video'), poster: 'atom-a-poster.png',
+                 files: [ALPHA(256)] }
     };
     const hero = { x: 0, y: 0, size: 0 };     // page coordinates (scrollTop 0); size 0 = no room
     const cont = { x: 0, y: 0, size: 0 };
