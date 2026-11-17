@@ -10,7 +10,7 @@ Student at SSPŠ Prague · Developer · Cybersecurity Enthusiast.
 Single-file, single-page-app style portfolio — five pages (Home, Work, Skills, About, Contact) behind a full-screen menu that paints in from the corner.
 
 - **One-time intro** — on the first visit of a session a short Blender-rendered clip (`assets/intro/`, an atom with racing light pulses) plays for ~3 s and cross-fades into Home. Click, tap, Esc, Enter or Space skips it; it never shows for deep links or with `prefers-reduced-motion`, and removes itself if the video can't play.
-- **Looping atom** — the same atom (`assets/atom/`) keeps turning beside the name on Home (the intro glides into it), small in the loader and dimmed under the clock card on Contact. Only one of the videos ever plays at a time, each is paused when its page or the tab is not showing, and with `prefers-reduced-motion` it is a still image. `assets/atom/og.jpg` is the share image.
+- **Looping atom (60 fps)** — the same atom (`assets/atom/`) keeps turning beside the name on Home (the intro glides into it), small in the loader and dimmed under the clock card on Contact. Only one of the videos ever plays at a time, each is paused when its page or the tab is not showing, and with `prefers-reduced-motion` it is a still image. `assets/atom/og.jpg` is the share image.
 - **WebGL backgrounds per page** — LineWaves on Home, ColorBends on Work, Beams on Skills / About / Contact. Each one only renders while its page is showing.
 - **Interactive hero wordmark** — hover a letter to see its dashed vector outline and selection frame; drag letters off the baseline and they spring back.
 - **Fold-in headings** — section titles unfold panel by panel when a page opens or scrolls into view.

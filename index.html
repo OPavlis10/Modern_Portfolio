@@ -2214,8 +2214,6 @@
 <!-- LOADER -->
 <div id="loader">
   <div class="l-mark">
-    <!-- ATOM (loader) — poster + sources are added by the ATOM script only when the loader really shows -->
-    <video class="l-atom atom-vid" width="64" height="64" muted loop playsinline preload="none" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
     <div class="big">Ondřej Pavlis</div>
     <div class="sm">Initializing portfolio</div>
     <div class="bar"></div>
@@ -2244,7 +2242,7 @@
      poster is fetched before it is needed. -->
 <div class="atom-shade" id="atomHeroShade" aria-hidden="true"></div>
 <div class="atom-layer atom-hero" id="atomHero" aria-hidden="true">
-  <video class="atom-vid" width="720" height="720" muted loop playsinline preload="metadata" poster="assets/atom/atom-poster.jpg" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
+  <video class="atom-vid" width="720" height="720" muted loop playsinline preload="metadata" poster="assets/atom/atom60-poster.jpg" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
 </div>
 <div class="atom-layer atom-contact" id="atomContact" aria-hidden="true">
   <video class="atom-vid" width="360" height="360" muted loop playsinline preload="none" disablepictureinpicture tabindex="-1" aria-hidden="true"></video>
@@ -3381,10 +3379,10 @@
       mini:    { v: loader && loader.querySelector('.l-atom'), poster: 'atom-mini-poster.jpg',
                  files: [['atom-mini.webm', WEBM], ['atom-mini.mp4', MP4]] },
       hero:    { v: heroEl.querySelector('video'),
-                 files: SMALL ? [['atom-loop-360.mp4', MP4]]
-                              : [['atom-loop.webm', WEBM], ['atom-loop.mp4', MP4]] },
-      contact: { v: contactEl.querySelector('video'), poster: 'atom-poster.jpg',
-                 files: [['atom-loop-360.mp4', MP4]] }
+                 files: SMALL ? [['atom60-360.mp4', MP4]]
+                              : [['atom60.webm', WEBM], ['atom60.mp4', MP4]] },
+      contact: { v: contactEl.querySelector('video'), poster: 'atom60-poster.jpg',
+                 files: [['atom60-360.mp4', MP4]] }
     };
     const hero = { x: 0, y: 0, size: 0 };     // page coordinates (scrollTop 0); size 0 = no room
     const cont = { x: 0, y: 0, size: 0 };
@@ -3432,7 +3430,7 @@
       // B: right of the name only, inside the wordmark's own band (tablets / phones)
       const b = { l: nameR + 28, t: H.t - 10, b: H.b + 10 };
       const sa = Math.min(right - a.l, a.b - a.t), sb = Math.min(right - b.l, b.b - b.t);
-      const cap = Math.min(W * 0.46, 720);
+      const cap = Math.min(Math.max(W * 0.2, 120), 300);     // small accent beside the name, not a second headline
       const z = sa >= sb ? a : b;
       const size = Math.floor(Math.min(Math.max(sa, sb), cap));
       if (size < HERO_MIN) return;
