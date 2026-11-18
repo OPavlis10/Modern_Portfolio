@@ -3110,7 +3110,9 @@
   // Never on touch devices: there a visible page is the one in use, and only
   // the hidden-tab rule applies.
   const AWAY_MS = 20000;
-  const BLUR_PAUSE = !window.matchMedia('(hover: none), (pointer: coarse)').matches;
+  // Off: a visible but unfocused window (Safari beside another app) must keep moving;
+  // the browser already reports a minimised or covered window as document.hidden.
+  const BLUR_PAUSE = false;
   let winAway = false, awayTimer = null;
   window.__winAway = () => winAway;
   function syncWinIdle() {
@@ -3588,6 +3590,8 @@
     function arm(a) {
       if (!a.v || a.armed) return;
       a.armed = true;
+      // belt and braces for the loop: some engines fire 'ended' despite the loop attribute
+      a.v.addEventListener('ended', () => { a.v.currentTime = 0; sync(); });
       if (a.poster) a.v.poster = DIR + a.poster;
       if (REDUCED) return;                    // reduced motion: the poster is all there is
       a.files.forEach(([file, type]) => {
